@@ -1,13 +1,14 @@
 package controllers
 
 import (
+	"net/http"
 	"os"
 	"time"
 
 	"backend/internal/database"
 	"backend/internal/models"
 
-	"github.com/gofiber/fiber/v2"
+	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -17,21 +18,24 @@ type LoginRequest struct {
 	Password string `json:"password"`
 }
 
-func Login(c *fiber.Ctx) error {
+func Login(c *gin.Context) {
 	var req LoginRequest
-	if err := c.BodyParser(&req); err != nil {
-		return c.Status(fiber.StatusBadRequest).JSON(fiber.Map{"message": "Invalid request"})
+	if err := c.ShouldBindJSON(&req); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"message": "Invalid request"})
+		return
 	}
 
 	var user models.User
 	// Preload role to include in response
 	if err := database.DB.Preload("Role.Permissions").Where("username = ?", req.Username).First(&user).Error; err != nil {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"message": "Username atau password salah"})
+		c.JSON(http.StatusUnauthorized, gin.H{"message": "Username atau password salah"})
+		return
 	}
 
 	// Verify password
 	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(req.Password)); err != nil {
-		return c.Status(fiber.StatusUnauthorized).JSON(fiber.Map{"message": "Username atau password salah"})
+		c.JSON(http.StatusUnauthorized, gin.H{"message": "Username atau password salah"})
+		return
 	}
 
 	// Generate JWT
@@ -55,12 +59,13 @@ func Login(c *fiber.Ctx) error {
 
 	tokenString, err := token.SignedString([]byte(secret))
 	if err != nil {
-		return c.Status(fiber.StatusInternalServerError).JSON(fiber.Map{"message": "Could not login"})
+		c.JSON(http.StatusInternalServerError, gin.H{"message": "Could not login"})
+		return
 	}
 
-	return c.JSON(fiber.Map{
+	c.JSON(http.StatusOK, gin.H{
 		"token": tokenString,
-		"user": fiber.Map{
+		"user": gin.H{
 			"id":          user.ID,
 			"identifier":  user.Name, // Using Name as identifier as expected by frontend
 			"username":    user.Username,

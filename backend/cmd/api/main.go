@@ -2,6 +2,7 @@ package main
 
 import (
 	"log"
+	"net/http"
 	"os"
 
 	"backend/internal/controllers"
@@ -9,9 +10,8 @@ import (
 	"backend/internal/middleware"
 	"backend/internal/models"
 
-	"github.com/gofiber/fiber/v2"
-	"github.com/gofiber/fiber/v2/middleware/cors"
-	"github.com/gofiber/fiber/v2/middleware/logger"
+	"github.com/gin-contrib/cors"
+	"github.com/gin-gonic/gin"
 	"github.com/joho/godotenv"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -33,7 +33,19 @@ func main() {
 	database.ConnectDB()
 
 	// Auto Migrate
-	database.DB.AutoMigrate(&models.User{}, &models.Role{}, &models.Permission{})
+	database.DB.AutoMigrate(&models.User{}, &models.Role{}, &models.Permission{}, &models.Treatment{}, &models.Patient{}, &models.Visit{}, &models.TreatmentLog{}, &models.SiteConfig{})
+
+	// Seeder: SiteConfig
+	var siteConfig models.SiteConfig
+	if err := database.DB.First(&siteConfig).Error; err != nil {
+		siteConfig = models.SiteConfig{
+			AppName:    "Greys Dental",
+			Subtitle:   "Aplikasi Manajemen",
+			LogoURL:    "",
+			FaviconURL: "/favicon.svg",
+		}
+		database.DB.Create(&siteConfig)
+	}
 
 	// Seeder: Create Admin Role and User if not exists
 	var adminRole models.Role
@@ -50,6 +62,8 @@ func main() {
 			Username: "admin",
 			Password: string(hashedPassword),
 			RoleID:   adminRole.ID,
+			FeePercentage: 40.0,
+			ApplyDeductions: true,
 		}
 		database.DB.Create(&adminUser)
 		log.Println("Seeded default admin user (username: admin, password: password123)")
@@ -59,6 +73,11 @@ func main() {
 	permissionsList := []string{
 		"users.view", "users.create", "users.edit", "users.delete",
 		"roles.view", "roles.create", "roles.edit", "roles.delete",
+		"treatments.view", "treatments.create", "treatments.edit", "treatments.delete",
+		"treatment_logs.view", "treatment_logs.create", "treatment_logs.delete",
+		"payroll.view",
+		"patients.view", "patients.create", "patients.edit", "patients.delete",
+		"visits.view", "visits.create", "visits.edit", "visits.delete",
 	}
 	var allPerms []models.Permission
 	for _, p := range permissionsList {
@@ -73,31 +92,46 @@ func main() {
 	// Assign permissions to Admin role if not already assigned
 	database.DB.Model(&adminRole).Association("Permissions").Append(allPerms)
 
-	// Initialize Fiber app
-	app := fiber.New()
+	// Initialize Gin app
+	app := gin.Default()
 
-	app.Use(logger.New())
 	frontendUrl := os.Getenv("FRONTEND_URL")
 	if frontendUrl == "" {
 		frontendUrl = "*"
 	}
 
-	app.Use(cors.New(cors.Config{
-		AllowOrigins: frontendUrl,
-		AllowHeaders: "Origin, Content-Type, Accept, Authorization",
-	}))
+	corsConfig := cors.DefaultConfig()
+	if frontendUrl == "*" {
+		corsConfig.AllowAllOrigins = true
+	} else {
+		corsConfig.AllowOrigins = []string{frontendUrl}
+	}
+	corsConfig.AllowHeaders = []string{"Origin", "Content-Length", "Content-Type", "Authorization", "Accept"}
+
+	app.Use(cors.New(corsConfig))
 
 	// Public Routes
+	// Serve static files for uploads
+	os.MkdirAll("uploads", 0755)
+	app.Static("/uploads", "./uploads")
+
 	api := app.Group("/api")
-	api.Post("/auth/login", controllers.Login)
+	api.POST("/auth/login", controllers.Login)
+	api.GET("/site-config", controllers.GetSiteConfig)
 
 	// Protected Routes
 	protected := api.Group("/", middleware.Protected())
-	protected.Get("/me", func(c *fiber.Ctx) error {
-		userID := c.Locals("userId")
+	protected.GET("/me", func(c *gin.Context) {
+		userID, exists := c.Get("userId")
+		if !exists {
+			c.JSON(http.StatusUnauthorized, gin.H{"message": "User not found in context"})
+			return
+		}
+
 		var user models.User
 		if err := database.DB.Preload("Role.Permissions").First(&user, userID).Error; err != nil {
-			return c.Status(fiber.StatusNotFound).JSON(fiber.Map{"message": "User not found"})
+			c.JSON(http.StatusNotFound, gin.H{"message": "User not found"})
+			return
 		}
 
 		var perms []string
@@ -105,27 +139,61 @@ func main() {
 			perms = append(perms, p.Name)
 		}
 
-		return c.JSON(fiber.Map{
-			"id":          user.ID,
-			"identifier":  user.Name,
-			"username":    user.Username,
-			"role":        user.Role.Name,
-			"permissions": perms,
+		c.JSON(http.StatusOK, gin.H{
+			"id":               user.ID,
+			"identifier":       user.Name,
+			"username":         user.Username,
+			"role":             user.Role.Name,
+			"permissions":      perms,
+			"fee_percentage":   user.FeePercentage,
+			"apply_deductions": user.ApplyDeductions,
 		})
 	})
 	
 	// API Khusus Manajemen Data
-	protected.Get("/dashboard/stats", controllers.GetDashboardStats)
+	protected.GET("/dashboard/stats", controllers.GetDashboardStats)
 
-	protected.Get("/users", controllers.GetUsers)
-	protected.Put("/users/:id/password", controllers.UpdatePassword)
+	protected.GET("/users", middleware.RequireAnyPermission("users.view", "visits.create", "visits.edit"), controllers.GetUsers)
+	protected.GET("/users/:id", middleware.RequireAnyPermission("users.view", "users.edit"), controllers.GetUser)
+	protected.POST("/users", middleware.RequirePermission("users.create"), controllers.CreateUser)
+	protected.PUT("/users/:id", middleware.RequirePermission("users.edit"), controllers.UpdateUser)
+	protected.DELETE("/users/:id", middleware.RequirePermission("users.delete"), controllers.DeleteUser)
+	protected.PUT("/users/:id/password", middleware.RequirePermission("users.edit"), controllers.UpdatePassword)
 
-	protected.Get("/roles", controllers.GetRoles)
-	protected.Post("/roles", controllers.CreateRole)
-	protected.Put("/roles/:id", controllers.UpdateRole)
-	protected.Delete("/roles/:id", controllers.DeleteRole)
+	protected.GET("/roles", controllers.GetRoles)
+	protected.POST("/roles", controllers.CreateRole)
+	protected.PUT("/roles/:id", controllers.UpdateRole)
+	protected.DELETE("/roles/:id", controllers.DeleteRole)
 
-	protected.Get("/permissions", controllers.GetPermissions)
+	protected.GET("/permissions", controllers.GetPermissions)
+	
+	protected.PUT("/site-config", middleware.RequireAnyPermission("roles.edit", "roles.create"), controllers.UpdateSiteConfig)
+	protected.POST("/upload", middleware.RequireAnyPermission("roles.edit", "roles.create"), controllers.UploadFile)
+
+	// Payroll and Treatments API
+	protected.GET("/treatments", middleware.RequireAnyPermission("treatments.view", "visits.edit"), controllers.GetTreatments)
+	protected.POST("/treatments", middleware.RequirePermission("treatments.create"), controllers.CreateTreatment)
+	protected.PUT("/treatments/:id", middleware.RequirePermission("treatments.edit"), controllers.UpdateTreatment)
+	protected.DELETE("/treatments/:id", middleware.RequirePermission("treatments.delete"), controllers.DeleteTreatment)
+
+	protected.GET("/treatment-logs", middleware.RequirePermission("treatment_logs.view"), controllers.GetTreatmentLogs)
+	protected.POST("/treatment-logs", middleware.RequireAnyPermission("treatment_logs.create", "visits.edit"), controllers.CreateTreatmentLog)
+	protected.DELETE("/treatment-logs/:id", middleware.RequireAnyPermission("treatment_logs.delete", "visits.edit"), controllers.DeleteTreatmentLog)
+
+	protected.GET("/payroll/calculate", middleware.RequirePermission("payroll.view"), controllers.CalculatePayroll)
+	protected.GET("/payroll/list", middleware.RequirePermission("payroll.view"), controllers.CalculatePayrollList)
+	protected.GET("/payroll/download-slip", middleware.RequirePermission("payroll.view"), controllers.DownloadSlipPDF)
+
+	// Patients API
+	protected.GET("/patients", middleware.RequireAnyPermission("patients.view", "visits.create", "visits.edit"), controllers.GetPatients)
+	protected.POST("/patients", middleware.RequirePermission("patients.create"), controllers.CreatePatient)
+	protected.PUT("/patients/:id", middleware.RequirePermission("patients.edit"), controllers.UpdatePatient)
+
+	// Visits API
+	protected.GET("/visits", middleware.RequirePermission("visits.view"), controllers.GetVisits)
+	protected.GET("/visits/:id", middleware.RequirePermission("visits.view"), controllers.GetVisit)
+	protected.POST("/visits", middleware.RequirePermission("visits.create"), controllers.CreateVisit)
+	protected.PUT("/visits/:id/status", middleware.RequirePermission("visits.edit"), controllers.UpdateVisitStatus)
 
 	// Get port from env
 	port := os.Getenv("PORT")
@@ -134,5 +202,5 @@ func main() {
 	}
 
 	// Start server
-	log.Fatal(app.Listen(":" + port))
+	log.Fatal(app.Run(":" + port))
 }

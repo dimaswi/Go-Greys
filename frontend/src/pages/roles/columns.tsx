@@ -17,7 +17,7 @@ export type Role = {
   permissions: Permission[]
 }
 
-export const columns: ColumnDef<Role>[] = [
+export const columns = (canEdit: boolean, canDelete: boolean): ColumnDef<Role>[] => [
   {
     accessorKey: "name",
     header: "Role Name",
@@ -52,16 +52,20 @@ export const columns: ColumnDef<Role>[] = [
 
       return (
         <div className="flex items-center gap-2 justify-end">
-          <Button variant="outline" size="sm" asChild>
-            <Link to={`/roles/${role.id}/edit`}>
-              <Edit className="h-4 w-4 text-muted-foreground" />
-              <span className="sr-only">Edit Role</span>
-            </Link>
-          </Button>
-          <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700 hover:bg-red-50">
-            <Trash className="h-4 w-4" />
-            <span className="sr-only">Delete</span>
-          </Button>
+          {canEdit && (
+            <Button variant="outline" size="sm" asChild>
+              <Link to={`/roles/${role.id}/edit`}>
+                <Edit className="h-4 w-4 text-muted-foreground" />
+                <span className="sr-only">Edit Role</span>
+              </Link>
+            </Button>
+          )}
+          {canDelete && (
+            <Button variant="outline" size="sm" className="text-red-600 hover:text-red-700 hover:bg-red-50">
+              <Trash className="h-4 w-4" />
+              <span className="sr-only">Delete</span>
+            </Button>
+          )}
         </div>
       )
     },

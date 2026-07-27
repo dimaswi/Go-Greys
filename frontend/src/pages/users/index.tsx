@@ -8,11 +8,19 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Plus, Search, X } from "lucide-react"
 import { Link } from "react-router-dom"
+import { useAuth } from "@/context/AuthContext"
 
 export default function UsersIndex() {
   const [data, setData] = useState<User[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState("")
+
+  const { user } = useAuth()
+  const isAdmin = user?.role?.toLowerCase() === "admin"
+  const canCreate = isAdmin || !!user?.permissions?.includes("users.create")
+  const canEdit = isAdmin || !!user?.permissions?.includes("users.edit")
+  const canDelete = isAdmin || !!user?.permissions?.includes("users.delete")
+  const canView = isAdmin || !!user?.permissions?.includes("users.view")
 
   useEffect(() => {
     const fetchUsers = async () => {
@@ -40,11 +48,13 @@ export default function UsersIndex() {
       title="Manajemen User"
       description="Kelola daftar pengguna sistem dan hak akses mereka."
       actions={
-        <Button asChild>
-          <Link to="/users/create">
-            <Plus className="mr-2 h-4 w-4" /> Tambah User
-          </Link>
-        </Button>
+        canCreate && (
+          <Button asChild>
+            <Link to="/users/create">
+              <Plus className="mr-2 h-4 w-4" /> Tambah User
+            </Link>
+          </Button>
+        )
       }
     >
       <div className="space-y-4">
@@ -69,7 +79,7 @@ export default function UsersIndex() {
         {loading ? (
           <div className="flex justify-center p-8">Loading...</div>
         ) : (
-          <DataTable columns={columns} data={filtered} />
+          <DataTable columns={columns(canView, canEdit, canDelete)} data={filtered} />
         )}
       </div>
     </PageShell>

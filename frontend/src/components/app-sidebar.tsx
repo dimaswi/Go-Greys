@@ -17,33 +17,18 @@ import {
   LayoutDashboard,
   Settings,
   School,
-  LogOut
+  LogOut,
+  Calculator
 } from "lucide-react"
 import { useAuth } from "../context/AuthContext"
-
-import { useEffect, useState } from "react"
-import axios from "axios"
+import { useSiteConfig } from "@/context/SiteConfigContext"
 import { resolveAssetUrl } from "@/lib/runtime"
 
 export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
   const location = useLocation()
   const { user, logout } = useAuth()
+  const { config } = useSiteConfig()
 
-  const [logoUrl, setLogoUrl] = useState("")
-  const [schoolName, setSchoolName] = useState("SiAK")
-
-  useEffect(() => {
-    axios.get("http://localhost:8080/api/site-config")
-      .then(res => {
-        if (res.data?.logo_url) {
-          setLogoUrl(resolveAssetUrl(res.data.logo_url))
-        }
-        if (res.data?.school_name) {
-          setSchoolName(res.data.school_name)
-        }
-      })
-      .catch(console.error)
-  }, [])
   const navGroups: any[] = []
 
   // Menu Utama (Tersedia untuk semua yang login)
@@ -54,18 +39,46 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
     ],
   })
 
+  // Menu Klinik
+  const isAdmin = user?.role?.toLowerCase() === "admin"
+  const klinikItems = []
+
+  if (isAdmin || user?.permissions?.includes("patients.view")) {
+    klinikItems.push({ title: "Pasien", url: "/patients", icon: Users })
+  }
+  if (isAdmin || user?.permissions?.includes("visits.view")) {
+    klinikItems.push({ title: "Antrean & Kunjungan", url: "/visits", icon: LayoutDashboard })
+  }
+  if (isAdmin || user?.permissions?.includes("treatments.view")) {
+    klinikItems.push({ title: "Master Tindakan", url: "/treatments", icon: Settings })
+  }
+  if (isAdmin || user?.permissions?.includes("payroll.view")) {
+    klinikItems.push({ title: "Penggajian", url: "/payroll/list", icon: Calculator })
+  }
+
+  if (klinikItems.length > 0) {
+    navGroups.push({
+      title: "Klinik & Penggajian",
+      items: klinikItems
+    })
+  }
+
   // Menu Sistem
   const sistemItems = []
-  const isAdmin = user?.role?.toLowerCase() === "admin"
   if (isAdmin || user?.permissions?.includes("users.view")) {
     sistemItems.push({ title: "Pengguna", url: "/users", icon: Users })
   }
   if (isAdmin || user?.permissions?.includes("roles.view")) {
     sistemItems.push({ title: "Roles & Akses", url: "/roles", icon: Settings })
   }
+  if (isAdmin || user?.permissions?.includes("roles.edit")) {
+    sistemItems.push({ title: "Pengaturan Branding", url: "/settings/brand", icon: Settings })
+  }
   if (sistemItems.length > 0) {
     navGroups.push({ title: "Sistem", items: sistemItems })
   }
+
+
 
   return (
     <Sidebar collapsible="icon" {...props}>
@@ -75,8 +88,8 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
         {/* Ketika expanded: px-3, ketika collapsed: px-0 & justify-center agar ikon sempurna di tengah 48px */}
         <div className="flex h-full w-full items-center px-4 gap-3 overflow-hidden group-data-[collapsible=icon]:px-0 group-data-[collapsible=icon]:justify-center">
           <div className="flex-shrink-0 w-8 h-8 rounded-lg bg-none flex items-center justify-center overflow-hidden">
-            {logoUrl ? (
-              <img src={logoUrl} alt="Logo" className="w-full h-full object-cover" />
+            {config.logo_url ? (
+              <img src={resolveAssetUrl(config.logo_url)} alt="Logo" className="w-full h-full object-contain" />
             ) : (
               <School className="h-4 w-4 text-white" />
             )}
@@ -84,10 +97,10 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
           {/* Text: hidden via CSS ketika collapsed */}
           <div className="flex flex-col min-w-0 group-data-[collapsible=icon]:hidden">
             <span className="text-sm font-semibold text-sidebar-accent-foreground leading-tight truncate">
-              {schoolName}
+              {config.app_name}
             </span>
             <span className="text-[11px] text-sidebar-foreground/50 leading-tight">
-              Admin Portal
+              {config.subtitle}
             </span>
           </div>
         </div>

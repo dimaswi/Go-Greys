@@ -8,6 +8,7 @@ import { Plus, Search, X } from "lucide-react"
 import { Link } from "react-router-dom"
 import { columns } from "./columns"
 import type { Role } from "./columns"
+import { useAuth } from "@/context/AuthContext"
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8080/api"
 
@@ -15,6 +16,12 @@ export default function RolesIndex() {
   const [data, setData] = useState<Role[]>([])
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState("")
+
+  const { user } = useAuth()
+  const isAdmin = user?.role?.toLowerCase() === "admin"
+  const canCreate = isAdmin || !!user?.permissions?.includes("roles.create")
+  const canEdit = isAdmin || !!user?.permissions?.includes("roles.edit")
+  const canDelete = isAdmin || !!user?.permissions?.includes("roles.delete")
 
   useEffect(() => {
     const fetchRoles = async () => {
@@ -42,12 +49,14 @@ export default function RolesIndex() {
       title="Manajemen Role"
       description="Kelola peran dan hak akses sistem."
       actions={
-        <Button size="sm" asChild>
-          <Link to="/roles/create">
-            <Plus className="mr-2 h-4 w-4" />
-            Tambah Role
-          </Link>
-        </Button>
+        canCreate && (
+          <Button size="sm" asChild>
+            <Link to="/roles/create">
+              <Plus className="mr-2 h-4 w-4" />
+              Tambah Role
+            </Link>
+          </Button>
+        )
       }
     >
       <div className="space-y-4">
@@ -72,7 +81,7 @@ export default function RolesIndex() {
         {loading ? (
           <div className="flex justify-center p-8">Loading...</div>
         ) : (
-          <DataTable columns={columns} data={filtered} />
+          <DataTable columns={columns(canEdit, canDelete)} data={filtered} />
         )}
       </div>
     </PageShell>

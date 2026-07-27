@@ -1,7 +1,11 @@
+import { Fragment, useState } from "react"
 import {
   type ColumnDef,
+  type Row,
+  type ExpandedState,
   flexRender,
   getCoreRowModel,
+  getExpandedRowModel,
   useReactTable,
 } from "@tanstack/react-table"
 import { ChevronLeft, ChevronRight, ChevronsLeft, ChevronsRight, Search } from "lucide-react"
@@ -37,6 +41,10 @@ interface DataTableProps<TData, TValue> {
   onSearchChange?: (value: string) => void
   totalItems?: number
   extraFilters?: React.ReactNode
+
+  // Collapsible rows
+  renderSubComponent?: (props: { row: Row<TData> }) => React.ReactNode
+  getRowCanExpand?: (row: Row<TData>) => boolean
 }
 
 export function DataTable<TData, TValue>({
@@ -55,13 +63,23 @@ export function DataTable<TData, TValue>({
   onSearchChange,
   totalItems,
   extraFilters,
+  renderSubComponent,
+  getRowCanExpand,
 }: DataTableProps<TData, TValue>) {
+  const [expanded, setExpanded] = useState<ExpandedState>({})
+
   const table = useReactTable({
     data,
     columns,
     getCoreRowModel: getCoreRowModel(),
     manualPagination: true,
     pageCount,
+    state: {
+      expanded,
+    },
+    onExpandedChange: setExpanded,
+    getExpandedRowModel: getExpandedRowModel(),
+    getRowCanExpand,
   })
 
   return (
@@ -97,8 +115,9 @@ export function DataTable<TData, TValue>({
             {table.getHeaderGroups().map((headerGroup) => (
               <TableRow key={headerGroup.id}>
                 {headerGroup.headers.map((header) => {
+                  const meta: any = header.column.columnDef.meta
                   return (
-                    <TableHead key={header.id} className="h-10 px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                    <TableHead key={header.id} className={`h-10 px-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider ${meta?.className ?? ""}`}>
                       {header.isPlaceholder
                         ? null
                         : flexRender(
@@ -116,27 +135,41 @@ export function DataTable<TData, TValue>({
               // Loading state only when no previous data exists
               Array.from({ length: 10 }).map((_, i) => (
                 <TableRow key={i}>
-                  {columns.map((_, j) => (
-                    <TableCell key={j} className="px-4 py-2.5">
-                      <div className="h-4 bg-muted/50 rounded-none animate-pulse w-full max-w-[120px]" />
-                    </TableCell>
-                  ))}
+                  {columns.map((col, j) => {
+                    const meta: any = col.meta
+                    return (
+                      <TableCell key={j} className={`px-4 py-2.5 ${meta?.className ?? ""}`}>
+                        <div className="h-4 bg-muted/50 rounded-none animate-pulse w-full max-w-[120px]" />
+                      </TableCell>
+                    )
+                  })}
                 </TableRow>
               ))
             ) : table.getRowModel().rows?.length ? (
               <>
                 {table.getRowModel().rows.map((row) => (
-                  <TableRow
-                    key={row.id}
-                    data-state={row.getIsSelected() && "selected"}
-                    className={`transition-colors hover:bg-muted/30 ${isLoading ? "opacity-50 pointer-events-none" : ""}`}
-                  >
-                    {row.getVisibleCells().map((cell) => (
-                      <TableCell key={cell.id} className="px-4 py-1">
-                        {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                      </TableCell>
-                    ))}
-                  </TableRow>
+                  <Fragment key={row.id}>
+                    <TableRow
+                      data-state={row.getIsSelected() && "selected"}
+                      className={`transition-colors hover:bg-muted/30 ${isLoading ? "opacity-50 pointer-events-none" : ""}`}
+                    >
+                      {row.getVisibleCells().map((cell) => {
+                        const meta: any = cell.column.columnDef.meta
+                        return (
+                          <TableCell key={cell.id} className={`px-4 py-1 ${meta?.className ?? ""}`}>
+                            {flexRender(cell.column.columnDef.cell, cell.getContext())}
+                          </TableCell>
+                        )
+                      })}
+                    </TableRow>
+                    {row.getIsExpanded() && renderSubComponent && (
+                      <TableRow className="bg-slate-50/50">
+                        <TableCell colSpan={row.getVisibleCells().length} className="p-0 border-b">
+                          {renderSubComponent({ row })}
+                        </TableCell>
+                      </TableRow>
+                    )}
+                  </Fragment>
                 ))}
               </>
             ) : (

@@ -1,4 +1,6 @@
 import * as React from "react"
+import { useEffect } from "react"
+import { useSiteConfig } from "@/context/SiteConfigContext"
 
 interface PageShellProps {
   title: string
@@ -10,6 +12,12 @@ interface PageShellProps {
 }
 
 export default function PageShell({ title, description, actions, children, backButton, footer }: PageShellProps) {
+  const { config } = useSiteConfig()
+
+  useEffect(() => {
+    document.title = `${title} | ${config.app_name}`
+  }, [title, config.app_name])
+
   return (
     <div className="flex flex-col flex-1 relative min-w-0 animate-fade-in">
       <div className="flex flex-col flex-1 px-4 md:px-6 lg:px-8 pt-4 pb-0">

@@ -7,6 +7,7 @@ import { Link, useNavigate, useParams } from "react-router-dom"
 import { useState, useEffect } from "react"
 import axios from "axios"
 import { useAppDialog } from "@/context/AppDialogContext"
+import { toast } from "sonner"
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8080/api"
 
@@ -22,7 +23,10 @@ export default function UserEdit() {
   const [formData, setFormData] = useState({
     name: "",
     username: "",
-    role_id: ""
+    role_id: "",
+    fee_percentage: "",
+    apply_deductions: false,
+    is_dokter: false
   })
 
   useEffect(() => {
@@ -45,7 +49,10 @@ export default function UserEdit() {
           setFormData({
             name: user.name,
             username: user.username,
-            role_id: userRole ? userRole.id : ""
+            role_id: userRole ? userRole.id : "",
+            fee_percentage: user.fee_percentage ? String(user.fee_percentage) : "0",
+            apply_deductions: !!user.apply_deductions,
+            is_dokter: !!user.is_dokter
           })
         }
       } catch (err) {
@@ -64,7 +71,8 @@ export default function UserEdit() {
       const token = localStorage.getItem("token")
       await axios.put(`${API_URL}/users/${id}`, {
         ...formData,
-        role_id: Number(formData.role_id)
+        role_id: Number(formData.role_id),
+        fee_percentage: Number(formData.fee_percentage)
       }, {
         headers: { Authorization: `Bearer ${token}` }
       })
@@ -85,7 +93,7 @@ export default function UserEdit() {
     })
     if (!newPassword) return
     if (newPassword.length < 6) {
-      await dialog.alert("Password minimal 6 karakter")
+      toast.error("Password minimal 6 karakter")
       return
     }
 
@@ -94,9 +102,9 @@ export default function UserEdit() {
       await axios.put(`${API_URL}/users/${id}/password`, { password: newPassword }, {
         headers: { Authorization: `Bearer ${token}` }
       })
-      await dialog.alert("Password berhasil diperbarui")
+      toast.success("Password berhasil diperbarui")
     } catch (err: any) {
-      await dialog.alert(err.response?.data?.message || "Gagal mengubah password")
+      toast.error(err.response?.data?.message || "Gagal mengubah password")
     }
   }
 
@@ -126,15 +134,15 @@ export default function UserEdit() {
             <div className="flex justify-center p-8 text-muted-foreground">Loading...</div>
           ) : (
             <form id="user-form" onSubmit={handleSubmit} className="space-y-6">
-              <div className="space-y-2 max-w-2xl">
+              <div className="space-y-2">
                 <Label htmlFor="name">Nama Lengkap</Label>
                 <Input id="name" required value={formData.name} onChange={handleChange} />
               </div>
-              <div className="space-y-2 max-w-2xl">
+              <div className="space-y-2">
                 <Label htmlFor="username">Username</Label>
                 <Input id="username" required value={formData.username} onChange={handleChange} />
               </div>
-              <div className="space-y-2 max-w-2xl">
+              <div className="space-y-2">
                 <Label htmlFor="role_id">Role</Label>
                 <Select value={formData.role_id} onValueChange={v => setFormData({ ...formData, role_id: v })} required>
                   <SelectTrigger>
@@ -147,8 +155,37 @@ export default function UserEdit() {
                   </SelectContent>
                 </Select>
               </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="fee_percentage">Persentase Gaji / Fee (%)</Label>
+                <Input id="fee_percentage" type="number" step="0.1" required value={formData.fee_percentage} onChange={handleChange} />
+              </div>
+              <div className="flex items-center space-x-2 pt-2">
+                <input 
+                  type="checkbox" 
+                  id="apply_deductions" 
+                  checked={formData.apply_deductions} 
+                  onChange={(e) => setFormData({ ...formData, apply_deductions: e.target.checked })}
+                  className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                />
+                <Label htmlFor="apply_deductions" className="font-normal cursor-pointer">
+                  Terapkan Aturan Potongan (Pemotongan bahan & rumus Behel)
+                </Label>
+              </div>
+              <div className="flex items-center space-x-2 pt-2">
+                <input 
+                  type="checkbox" 
+                  id="is_dokter" 
+                  checked={formData.is_dokter} 
+                  onChange={(e) => setFormData({ ...formData, is_dokter: e.target.checked })}
+                  className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                />
+                <Label htmlFor="is_dokter" className="font-normal cursor-pointer">
+                  Akun ini adalah seorang Dokter (Bisa dipilih saat pasien mendaftar antrean)
+                </Label>
+              </div>
 
-              <div className="pt-4 border-t max-w-2xl">
+              <div className="pt-4 border-t">
                 <h3 className="text-sm font-medium mb-4">Keamanan</h3>
                 <Button type="button" variant="outline" onClick={handlePasswordChange}>
                   <KeyRound className="h-4 w-4 mr-2" />

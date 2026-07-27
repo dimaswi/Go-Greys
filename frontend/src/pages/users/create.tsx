@@ -18,7 +18,10 @@ export default function UserCreate() {
     name: "",
     username: "",
     password: "",
-    role_id: ""
+    role_id: "",
+    fee_percentage: "",
+    apply_deductions: false,
+    is_dokter: false
   })
 
   useEffect(() => {
@@ -43,7 +46,8 @@ export default function UserCreate() {
       const token = localStorage.getItem("token")
       await axios.post(`${API_URL}/users`, {
         ...formData,
-        role_id: Number(formData.role_id)
+        role_id: Number(formData.role_id),
+        fee_percentage: Number(formData.fee_percentage)
       }, {
         headers: { Authorization: `Bearer ${token}` }
       })
@@ -78,19 +82,19 @@ export default function UserCreate() {
       <div className="flex flex-col gap-4 px-4 md:px-6 lg:px-8 flex-1">
         <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 mb-6 max-w-full">
           <form id="user-form" onSubmit={handleSubmit} className="space-y-6">
-            <div className="space-y-2 max-w-2xl">
+            <div className="space-y-2">
               <Label htmlFor="name">Nama Lengkap</Label>
               <Input id="name" placeholder="Masukkan nama lengkap" required value={formData.name} onChange={handleChange} />
             </div>
-            <div className="space-y-2 max-w-2xl">
+            <div className="space-y-2">
               <Label htmlFor="username">Username</Label>
               <Input id="username" placeholder="Masukkan username" required value={formData.username} onChange={handleChange} />
             </div>
-            <div className="space-y-2 max-w-2xl">
+            <div className="space-y-2">
               <Label htmlFor="password">Password</Label>
               <Input id="password" type="password" placeholder="Masukkan password" required value={formData.password} onChange={handleChange} />
             </div>
-            <div className="space-y-2 max-w-2xl">
+            <div className="space-y-2">
               <Label htmlFor="role_id">Role</Label>
               <Select value={formData.role_id} onValueChange={v => setFormData({ ...formData, role_id: v })} required>
                 <SelectTrigger>
@@ -102,6 +106,34 @@ export default function UserCreate() {
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="fee_percentage">Persentase Gaji / Fee (%)</Label>
+              <Input id="fee_percentage" type="number" step="0.1" placeholder="Misal: 40" required value={formData.fee_percentage} onChange={handleChange} />
+            </div>
+            <div className="flex items-center space-x-2 pt-2">
+              <input 
+                type="checkbox" 
+                id="apply_deductions" 
+                checked={formData.apply_deductions} 
+                onChange={(e) => setFormData({ ...formData, apply_deductions: e.target.checked })}
+                className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+              />
+              <Label htmlFor="apply_deductions" className="font-normal cursor-pointer">
+                Terapkan Aturan Potongan (Pemotongan bahan & rumus Behel)
+              </Label>
+            </div>
+            <div className="flex items-center space-x-2 pt-2">
+              <input 
+                type="checkbox" 
+                id="is_dokter" 
+                checked={formData.is_dokter} 
+                onChange={(e) => setFormData({ ...formData, is_dokter: e.target.checked })}
+                className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+              />
+              <Label htmlFor="is_dokter" className="font-normal cursor-pointer">
+                Akun ini adalah seorang Dokter (Bisa dipilih saat pasien mendaftar antrean)
+              </Label>
             </div>
           </form>
         </div>

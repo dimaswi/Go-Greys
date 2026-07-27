@@ -101,7 +101,7 @@ export default function RoleEdit() {
             <div className="flex justify-center p-8 text-muted-foreground">Loading...</div>
           ) : (
             <form id="role-form" onSubmit={handleSubmit} className="space-y-6">
-              <div className="space-y-2 max-w-2xl">
+              <div className="space-y-2">
                 <Label htmlFor="name">Nama Role</Label>
                 <Input 
                   id="name" 
@@ -111,7 +111,7 @@ export default function RoleEdit() {
                   onChange={e => setFormData({ ...formData, name: e.target.value })}
                 />
               </div>
-              <div className="space-y-2 max-w-2xl">
+              <div className="space-y-2">
                 <Label htmlFor="description">Deskripsi</Label>
                 <Input 
                   id="description" 

@@ -80,7 +80,7 @@ export default function RoleCreate() {
       <div className="flex flex-col gap-4 px-4 md:px-6 lg:px-8 flex-1">
         <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 mb-6 max-w-full">
           <form id="role-form" onSubmit={handleSubmit} className="space-y-6">
-            <div className="space-y-2 max-w-2xl">
+            <div className="space-y-2">
               <Label htmlFor="name">Nama Role</Label>
               <Input 
                 id="name" 
@@ -90,7 +90,7 @@ export default function RoleCreate() {
                 onChange={e => setFormData({ ...formData, name: e.target.value })}
               />
             </div>
-            <div className="space-y-2 max-w-2xl">
+            <div className="space-y-2">
               <Label htmlFor="description">Deskripsi</Label>
               <Input 
                 id="description" 

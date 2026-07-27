@@ -1,0 +1,69 @@
+# ===========================================
+# Go-Greys — Monorepo .gitignore
+# Backend: Go (Gin) | Frontend: Vite + React
+# ===========================================
+
+# ─── Environment & Secrets ──────────────────
+.env
+.env.*
+!.env.dev
+!.env.example
+!.env.dev.example
+
+# ─── Go Backend ─────────────────────────────
+# Compiled binaries
+backend/bin/
+backend/*.exe
+backend/*.out
+backend/*.test
+backend/*.prof
+
+# Go build cache / vendor (jika tidak di-commit)
+backend/vendor/
+
+# Air live-reload temp
+backend/tmp/
+
+# Uploaded files (runtime)
+backend/cmd/api/uploads/
+backend/uploads/
+
+# Test coverage
+backend/coverage.out
+backend/coverage.html
+
+# ─── Frontend (Vite + React + TypeScript) ───
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+frontend/.cache/
+
+# TypeScript build info
+frontend/tsconfig.tsbuildinfo
+
+# Local Vite env overrides
+frontend/.env.local
+frontend/.env.*.local
+
+# ─── IDE & Editor ───────────────────────────
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+Thumbs.db
+
+# ─── OS Generated ───────────────────────────
+Desktop.ini
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+
+# ─── Docker ─────────────────────────────────
+# Uncomment jika ingin mengabaikan override compose
+# docker-compose.override.yml
+
+# ─── Logs ───────────────────────────────────
+*.log
+logs/
