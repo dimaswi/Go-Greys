@@ -116,7 +116,7 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
             </SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu className="gap-0.5">
-                {group.items.map((item) => {
+                {group.items.map((item: any) => {
                   const isActive = location.pathname === item.url ||
                     (item.url !== "/" && location.pathname.startsWith(item.url))
                   return (
