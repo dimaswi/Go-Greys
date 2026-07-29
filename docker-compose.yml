@@ -27,6 +27,7 @@ services:
       - DB_PASSWORD=password
       - DB_NAME=go_greys
       - DB_PORT=5432
+      - DB_SSLMODE=disable
       - JWT_SECRET=supersecretkey
     depends_on:
       - db

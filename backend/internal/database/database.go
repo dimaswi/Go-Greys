@@ -13,13 +13,18 @@ import (
 var DB *gorm.DB
 
 func ConnectDB() {
+	sslMode := strings.TrimSpace(os.Getenv("DB_SSLMODE"))
+	if sslMode == "" {
+		sslMode = "disable"
+	}
+
 	dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=%s TimeZone=Asia/Jakarta",
 		strings.TrimSpace(os.Getenv("DB_HOST")),
 		strings.TrimSpace(os.Getenv("DB_USER")),
 		strings.TrimSpace(os.Getenv("DB_PASSWORD")),
 		strings.TrimSpace(os.Getenv("DB_NAME")),
 		strings.TrimSpace(os.Getenv("DB_PORT")),
-		strings.TrimSpace(os.Getenv("DB_SSLMODE")),
+		sslMode,
 	)
 
 	var err error
