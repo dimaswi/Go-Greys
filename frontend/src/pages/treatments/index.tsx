@@ -52,7 +52,7 @@ export default function TreatmentsIndex() {
         canCreate && (
           <Button asChild>
             <Link to="/treatments/create">
-              <Plus className="mr-2 h-4 w-4" /> Tambah Tindakan
+              <Plus className="sm:mr-2 h-4 w-4" /> <span className="hidden sm:inline">Tambah Tindakan</span>
             </Link>
           </Button>
         )

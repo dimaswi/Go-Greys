@@ -52,8 +52,7 @@ export default function RolesIndex() {
         canCreate && (
           <Button size="sm" asChild>
             <Link to="/roles/create">
-              <Plus className="mr-2 h-4 w-4" />
-              Tambah Role
+              <Plus className="sm:mr-2 h-4 w-4" /> <span className="hidden sm:inline">Tambah Role</span>
             </Link>
           </Button>
         )

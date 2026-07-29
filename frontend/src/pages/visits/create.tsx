@@ -228,11 +228,11 @@ export default function VisitCreate() {
         </Button>
         <Button type="submit" form="visit-form" disabled={loading} className="min-w-[140px]">
           {loading ? (
-            <Loader2 className="h-4 w-4 animate-spin mr-2" />
+            <Loader2 className="h-4 w-4 animate-spin sm:mr-2" />
           ) : (
-            <Save className="h-4 w-4 mr-2" />
+            <Save className="h-4 w-4 sm:mr-2" />
           )}
-          Masukkan Antrean
+          <span className="hidden sm:inline">Masukkan Antrean</span>
         </Button>
       </div>
     </div>

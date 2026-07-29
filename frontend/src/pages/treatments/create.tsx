@@ -116,11 +116,11 @@ export default function TreatmentCreate() {
         </Button>
         <Button type="submit" form="treatment-form" disabled={loading} className="min-w-[140px]">
           {loading ? (
-            <Loader2 className="h-4 w-4 animate-spin mr-2" />
+            <Loader2 className="h-4 w-4 animate-spin sm:mr-2" />
           ) : (
-            <Save className="h-4 w-4 mr-2" />
+            <Save className="h-4 w-4 sm:mr-2" />
           )}
-          Simpan Tindakan
+          <span className="hidden sm:inline">Simpan Tindakan</span>
         </Button>
       </div>
     </div>

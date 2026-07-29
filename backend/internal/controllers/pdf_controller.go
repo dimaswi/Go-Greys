@@ -4,8 +4,8 @@ import (
 	"bytes"
 	"fmt"
 	"image"
-	"image/jpeg"
 	_ "image/png"
+	"io"
 	"net/http"
 	"os"
 	"strings"
@@ -115,35 +115,47 @@ func DownloadSlipPDF(c *gin.Context) {
 	borderColor := []int{226, 232, 240} // Slate 200
 
 	// Header Rectangle
-	pdf.SetFillColor(primaryColor[0], primaryColor[1], primaryColor[2])
+	// Green background
+	pdf.SetFillColor(22, 163, 74) // Green 600
 	pdf.Rect(0, 0, 210, 35, "F")
 
-	// Render Logo if exists
-	logoURL := siteConfig.LogoURL
-	if logoURL != "" {
-		imgPath := strings.TrimPrefix(logoURL, "/")
-		file, err := os.Open(imgPath)
+	// Render Logo from logo.PNG
+	logoPaths := []string{"../../logo.PNG", "logo.PNG", "../../../logo.PNG", `c:\Users\User\Documents\Freelance\Go-Greys\logo.PNG`}
+	var file *os.File
+	for _, p := range logoPaths {
+		file, err = os.Open(p)
 		if err == nil {
-			img, _, err := image.Decode(file)
-			file.Close()
-			if err == nil {
-				// Convert to JPEG in memory to avoid gofpdf's strict PNG parser issues
-				var jpgBuf bytes.Buffer
-				err = jpeg.Encode(&jpgBuf, img, &jpeg.Options{Quality: 90})
-				if err == nil {
-					pdf.RegisterImageOptionsReader(imgPath, gofpdf.ImageOptions{ImageType: "JPEG"}, &jpgBuf)
-					pdf.ImageOptions(imgPath, 15, 10, 15, 0, false, gofpdf.ImageOptions{ImageType: "JPEG"}, 0, "")
-				}
-			}
+			break
 		}
 	}
 
-	pdf.SetTextColor(255, 255, 255)
-	pdf.SetFont("Arial", "B", 24)
-	pdf.SetXY(10, 10)
-	pdf.CellFormat(190, 10, appName, "", 1, "C", false, 0, "")
-	pdf.SetFont("Arial", "", 12)
-	pdf.CellFormat(190, 8, "SLIP GAJI PEGAWAI", "", 1, "C", false, 0, "")
+	if file != nil {
+		fileBytes, err := io.ReadAll(file)
+		file.Close()
+		if err == nil {
+			imgConfig, _, err := image.DecodeConfig(bytes.NewReader(fileBytes))
+			if err == nil {
+				imgPath := "logo_header"
+				pdf.RegisterImageOptionsReader(imgPath, gofpdf.ImageOptions{ImageType: "PNG"}, bytes.NewReader(fileBytes))
+				
+				// Calculate width for centering
+				h := 25.0
+				w := h * float64(imgConfig.Width) / float64(imgConfig.Height)
+				x := (210.0 - w) / 2.0
+				y := (35.0 - h) / 2.0
+				
+				pdf.ImageOptions(imgPath, x, y, w, h, false, gofpdf.ImageOptions{ImageType: "PNG"}, 0, "")
+			}
+		}
+	} else {
+		// Fallback text if logo fails to load
+		pdf.SetTextColor(255, 255, 255)
+		pdf.SetFont("Arial", "B", 24)
+		pdf.SetXY(10, 10)
+		pdf.CellFormat(190, 10, appName, "", 1, "C", false, 0, "")
+		pdf.SetFont("Arial", "", 12)
+		pdf.CellFormat(190, 8, "SLIP GAJI PEGAWAI", "", 1, "C", false, 0, "")
+	}
 
 	pdf.SetTextColor(0, 0, 0)
 	pdf.SetY(40) // Move up slightly

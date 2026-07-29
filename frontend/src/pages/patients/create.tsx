@@ -102,11 +102,11 @@ export default function PatientCreate() {
         </Button>
         <Button type="submit" form="patient-form" disabled={loading} className="min-w-[140px]">
           {loading ? (
-            <Loader2 className="h-4 w-4 animate-spin mr-2" />
+            <Loader2 className="h-4 w-4 animate-spin sm:mr-2" />
           ) : (
-            <Save className="h-4 w-4 mr-2" />
+            <Save className="h-4 w-4 sm:mr-2" />
           )}
-          Simpan Pasien
+          <span className="hidden sm:inline">Simpan Pasien</span>
         </Button>
       </div>
     </div>

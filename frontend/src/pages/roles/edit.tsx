@@ -157,11 +157,11 @@ export default function RoleEdit() {
         </Button>
         <Button type="submit" form="role-form" disabled={loading || initialLoading} className="min-w-[140px]">
           {loading ? (
-            <Loader2 className="h-4 w-4 animate-spin mr-2" />
+            <Loader2 className="h-4 w-4 animate-spin sm:mr-2" />
           ) : (
-            <Save className="h-4 w-4 mr-2" />
+            <Save className="h-4 w-4 sm:mr-2" />
           )}
-          Simpan Perubahan
+          <span className="hidden sm:inline">Simpan Perubahan</span>
         </Button>
       </div>
     </div>

@@ -23,7 +23,7 @@ export default function PageShell({ title, description, actions, children, backB
       <div className="flex flex-col flex-1 px-4 md:px-6 lg:px-8 pt-4 pb-0">
         <div className="flex flex-col gap-2 flex-1">
           {/* Page Header — like Go-Voting */}
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex flex-wrap items-center justify-between mb-4 gap-4">
             <div className="flex items-center gap-4">
               {backButton && (
                 <div className="shrink-0">
@@ -31,18 +31,18 @@ export default function PageShell({ title, description, actions, children, backB
                 </div>
               )}
               <div className="flex flex-col">
-                <h1 className="text-2xl font-bold tracking-tight text-foreground leading-tight">
+                <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-foreground leading-tight">
                   {title}
                 </h1>
                 {description && (
-                  <p className="text-sm text-muted-foreground mt-0.5">
+                  <p className="hidden md:block text-xs sm:text-sm text-muted-foreground mt-0.5">
                     {description}
                   </p>
                 )}
               </div>
             </div>
             {actions && (
-              <div className="flex items-center gap-2">
+              <div className="flex flex-wrap items-center justify-end gap-2 shrink-0">
                 {actions}
               </div>
             )}

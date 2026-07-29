@@ -93,9 +93,8 @@ export default function UserShow() {
       actions={
         <Button asChild>
           <Link to={`/users/${id}/edit`}>
-            <Edit className="h-4 w-4 mr-2" />
-            Edit User
-          </Link>
+            <Edit className="h-4 w-4 sm:mr-2" /> <span className="hidden sm:inline">Edit User</span>
+            </Link>
         </Button>
       }
       footer={
@@ -105,8 +104,7 @@ export default function UserShow() {
           </Button>
           <Button asChild className="min-w-[140px]">
             <Link to={`/users/${id}/edit`}>
-              <Edit className="h-4 w-4 mr-2" />
-              Edit User
+              <Edit className="h-4 w-4 sm:mr-2" /> <span className="hidden sm:inline">Edit User</span>
             </Link>
           </Button>
         </>

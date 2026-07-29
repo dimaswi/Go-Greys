@@ -51,7 +51,7 @@ export default function UsersIndex() {
         canCreate && (
           <Button asChild>
             <Link to="/users/create">
-              <Plus className="mr-2 h-4 w-4" /> Tambah User
+              <Plus className="sm:mr-2 h-4 w-4" /> <span className="hidden sm:inline">Tambah User</span>
             </Link>
           </Button>
         )

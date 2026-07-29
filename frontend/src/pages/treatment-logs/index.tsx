@@ -45,8 +45,8 @@ export default function TreatmentLogsIndex() {
       actions={
         <Button asChild>
           <Link to="/treatment-logs/create">
-            <Plus className="mr-2 h-4 w-4" /> Catat Tindakan Baru
-          </Link>
+            <Plus className="sm:mr-2 h-4 w-4" /> <span className="hidden sm:inline">Catat Tindakan Baru</span>
+            </Link>
         </Button>
       }
     >

@@ -188,7 +188,7 @@ export default function UserEdit() {
               <div className="pt-4 border-t">
                 <h3 className="text-sm font-medium mb-4">Keamanan</h3>
                 <Button type="button" variant="outline" onClick={handlePasswordChange}>
-                  <KeyRound className="h-4 w-4 mr-2" />
+                  <KeyRound className="h-4 w-4 sm:mr-2" />
                   Ubah Password Pengguna
                 </Button>
               </div>
@@ -203,11 +203,11 @@ export default function UserEdit() {
         </Button>
         <Button type="submit" form="user-form" disabled={loading || initialLoading} className="min-w-[140px]">
           {loading ? (
-            <Loader2 className="h-4 w-4 animate-spin mr-2" />
+            <Loader2 className="h-4 w-4 animate-spin sm:mr-2" />
           ) : (
-            <Save className="h-4 w-4 mr-2" />
+            <Save className="h-4 w-4 sm:mr-2" />
           )}
-          Simpan Perubahan
+          <span className="hidden sm:inline">Simpan Perubahan</span>
         </Button>
       </div>
     </div>

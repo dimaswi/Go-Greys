@@ -111,10 +111,10 @@ export default function PayrollIndex() {
         </Link>
       }
       actions={
-        <Link to="/payroll/list">
-          <Button variant="outline" size="sm" className="h-9 bg-white text-slate-700 shadow-sm">
-            <Users className="w-4 h-4 mr-2 text-slate-500" />
-            List Semua Pegawai
+        <Link to="/payroll/list" className="w-full sm:w-auto">
+          <Button variant="outline" size="sm" className="h-9 bg-white text-slate-700 shadow-sm w-full sm:w-auto px-2 sm:px-3">
+            <Users className="w-4 h-4 sm:mr-2 text-slate-500" />
+            <span className="hidden sm:inline">List Semua Pegawai</span>
           </Button>
         </Link>
       }
@@ -174,9 +174,9 @@ export default function PayrollIndex() {
               <Input id="end_date" type="date" required value={formData.end_date} onChange={(e) => setFormData({ ...formData, end_date: e.target.value })} />
             </div>
 
-            <Button type="submit" disabled={loading} className="w-full mt-2">
-              {loading ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Calculator className="h-4 w-4 mr-2" />}
-              Hitung Gaji
+            <Button type="submit" disabled={loading} className="w-full mt-2 px-2 sm:px-4">
+              {loading ? <Loader2 className="h-4 w-4 sm:mr-2 animate-spin" /> : <Calculator className="h-4 w-4 sm:mr-2" />}
+              <span className="hidden sm:inline">Hitung Gaji</span>
             </Button>
 
             {error && <p className="text-sm text-red-500 mt-2 font-medium">{error}</p>}
@@ -192,10 +192,10 @@ export default function PayrollIndex() {
                   <h2 className="text-xl font-bold">Laporan Gaji: <span className="text-primary">{result.user.name}</span></h2>
                   <p className="text-sm text-slate-500 mt-1">Periode: {result.period.start} s/d {result.period.end}</p>
                 </div>
-                <div className="flex flex-col md:text-right gap-3">
-                  <Button variant="outline" size="sm" onClick={handleDownloadPDF} className="bg-white hover:bg-slate-50 text-indigo-600 border-indigo-200 shadow-sm">
-                    <FileText className="w-4 h-4 mr-2" />
-                    Download PDF
+                <div className="flex flex-col md:text-right gap-3 w-full sm:w-auto mt-4 md:mt-0">
+                  <Button variant="outline" size="sm" onClick={handleDownloadPDF} className="bg-white hover:bg-slate-50 text-indigo-600 border-indigo-200 shadow-sm px-2 sm:px-3 w-full sm:w-auto">
+                    <FileText className="w-4 h-4 sm:mr-2" />
+                    <span className="hidden sm:inline">Download PDF</span>
                   </Button>
                 </div>
               </div>
@@ -204,7 +204,7 @@ export default function PayrollIndex() {
                 <div className="mb-6 flex-grow">
                   <h3 className="font-semibold text-slate-800 mb-3">Daftar Tindakan</h3>
                   <div className="overflow-x-auto border border-slate-200 rounded">
-                    <table className="w-full text-xs text-left">
+                    <table className="w-full text-xs text-left min-w-[500px]">
                       <thead className="bg-slate-50 text-slate-500 uppercase font-semibold">
                         <tr>
                           <th className="px-3 py-2 border-b">Tanggal</th>

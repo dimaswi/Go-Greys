@@ -4,9 +4,10 @@ import { useParams, Link, useNavigate } from "react-router-dom"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { ArrowLeft, CheckCircle, PlusCircle, Trash, User, Stethoscope, FileText } from "lucide-react"
+import { ArrowLeft, CheckCircle, PlusCircle, Trash, User, Stethoscope, FileText, ChevronDown } from "lucide-react"
 import { toast } from "sonner"
 import dayjs from "dayjs"
+import { useAuth } from "@/context/AuthContext"
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8080/api"
 const formatRupiah = (angka: number) => {
@@ -20,13 +21,21 @@ export default function RoomPanel() {
   const navigate = useNavigate()
   const [visit, setVisit] = useState<any>(null)
   const [treatmentsList, setTreatmentsList] = useState<any[]>([])
+  const [usersList, setUsersList] = useState<any[]>([])
   
   const [selectedTreatmentId, setSelectedTreatmentId] = useState("")
   const [treatmentSearch, setTreatmentSearch] = useState("")
   const [treatmentDropdownOpen, setTreatmentDropdownOpen] = useState(false)
+  
+  const [selectedUserId, setSelectedUserId] = useState("")
+  const [userSearch, setUserSearch] = useState("")
+  const [userDropdownOpen, setUserDropdownOpen] = useState(false)
+
   const [appliedTariff, setAppliedTariff] = useState("")
   const [treatmentNotes, setTreatmentNotes] = useState("")
   const [isAssigning, setIsAssigning] = useState(false)
+  
+  const { user: currentUser } = useAuth()
   
   // Dialog state
   const [isFinishDialogOpen, setIsFinishDialogOpen] = useState(false)
@@ -54,26 +63,42 @@ export default function RoomPanel() {
   }
 
   useEffect(() => {
+    const token = localStorage.getItem("token")
+    const headers = { Authorization: `Bearer ${token}` }
+    
     fetchVisit()
     
     // Fetch master treatments
-    const token = localStorage.getItem("token")
-    axios.get(`${API_URL}/treatments`, { headers: { Authorization: `Bearer ${token}` }})
+    axios.get(`${API_URL}/treatments`, { headers })
       .then(res => setTreatmentsList(res.data || []))
+      .catch(console.error)
+
+    // Fetch users for dropdown
+    axios.get(`${API_URL}/users`, { headers })
+      .then(res => setUsersList(res.data || []))
       .catch(console.error)
   }, [id])
 
+  useEffect(() => {
+    if (visit && !selectedUserId && currentUser) {
+      if (visit.doctor_id && visit.doctor) {
+        setSelectedUserId(String(visit.doctor_id))
+        setUserSearch(visit.doctor.name || "")
+      } else if (currentUser?.id) {
+        setSelectedUserId(String(currentUser.id))
+        setUserSearch(currentUser.name || currentUser.identifier || "")
+      }
+    }
+  }, [visit, currentUser])
+
   const handleAssignTreatment = async () => {
-    if (!selectedTreatmentId || !appliedTariff) return
+    if (!selectedTreatmentId || !appliedTariff || !selectedUserId) return
     setIsAssigning(true)
     try {
       const token = localStorage.getItem("token")
-      // User ID (doctor) comes from current logged in user.
-      const authRes = await axios.get(`${API_URL}/me`, { headers: { Authorization: `Bearer ${token}` }})
-      const doctorId = authRes.data.id
 
       await axios.post(`${API_URL}/treatment-logs`, {
-        user_id: doctorId,
+        user_id: Number(selectedUserId),
         treatment_id: Number(selectedTreatmentId),
         visit_id: Number(id),
         patient_id: visit.patient_id,
@@ -212,78 +237,127 @@ export default function RoomPanel() {
                     Tambah Tindakan Baru
                   </h3>
                   
-                  <div className="bg-slate-50 rounded-xl p-5 border border-slate-100 flex flex-col md:flex-row gap-4 items-end">
-                    <div className="w-full md:w-1/3 space-y-1 relative">
-                      <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Pilih Tindakan</label>
-                      <Input
-                        type="text"
-                        placeholder="Cari tindakan..."
-                        className="bg-white"
-                        value={treatmentSearch}
-                        onChange={e => {
-                          setTreatmentSearch(e.target.value)
-                          setSelectedTreatmentId("") // reset selection when typing
-                          setAppliedTariff("")
-                          if (!treatmentDropdownOpen) setTreatmentDropdownOpen(true)
-                        }}
-                        onFocus={() => setTreatmentDropdownOpen(true)}
-                        onBlur={() => setTimeout(() => setTreatmentDropdownOpen(false), 200)}
-                      />
-                      {treatmentDropdownOpen && (
-                        <div className="absolute z-10 w-full mt-1 bg-white border border-slate-200 rounded-md shadow-lg max-h-60 overflow-auto bottom-full mb-1">
-                          {treatmentsList.filter(t => (t.name || "").toLowerCase().includes(treatmentSearch.toLowerCase())).length > 0 ? (
-                            treatmentsList.filter(t => (t.name || "").toLowerCase().includes(treatmentSearch.toLowerCase())).map(t => (
-                              <div
-                                key={t.ID}
-                                className="px-4 py-2 hover:bg-slate-100 cursor-pointer text-sm flex justify-between items-center"
-                                onClick={() => {
-                                  setSelectedTreatmentId(String(t.ID))
-                                  setTreatmentSearch(t.name)
-                                  if (t.base_price) {
-                                    const formatted = String(t.base_price).replace(/\D/g, "").replace(/\B(?=(\d{3})+(?!\d))/g, ".")
-                                    setAppliedTariff(formatted)
-                                  }
-                                  setTreatmentDropdownOpen(false)
-                                }}
-                              >
-                                <span className="font-medium text-slate-800">{t.name}</span>
-                              </div>
-                            ))
-                          ) : (
-                            <div className="px-4 py-3 text-sm text-slate-500 text-center">Tindakan tidak ditemukan.</div>
-                          )}
+                  <div className="bg-slate-50 rounded-xl p-5 border border-slate-100 flex flex-col gap-4">
+                    <div className="flex flex-col md:flex-row gap-4">
+                      <div className="w-full md:w-1/2 space-y-1 relative">
+                        <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Ditangani Oleh</label>
+                        <div className="relative">
+                          <Input
+                            type="text"
+                            placeholder="Cari dokter atau perawat..."
+                            className="bg-white pr-8 cursor-pointer"
+                            value={userSearch}
+                            onChange={e => {
+                              setUserSearch(e.target.value)
+                              setSelectedUserId("")
+                              if (!userDropdownOpen) setUserDropdownOpen(true)
+                            }}
+                            onFocus={() => setUserDropdownOpen(true)}
+                            onBlur={() => setTimeout(() => setUserDropdownOpen(false), 200)}
+                          />
+                          <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
                         </div>
-                      )}
-                    </div>
-                    
-                    <div className="w-full md:w-1/3 space-y-1">
-                      <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Catatan (Opsional)</label>
-                      <Input 
-                        type="text" 
-                        placeholder="Misal: Gigi 45" 
-                        className="bg-white"
-                        value={treatmentNotes} 
-                        onChange={e => setTreatmentNotes(e.target.value)} 
-                      />
-                    </div>
+                        {userDropdownOpen && (
+                          <div className="absolute z-10 w-full mt-1 bg-white border border-slate-200 rounded-md shadow-lg max-h-60 overflow-auto bottom-full mb-1">
+                            {usersList.filter(u => (u.name || "").toLowerCase().includes(userSearch.toLowerCase())).length > 0 ? (
+                              usersList.filter(u => (u.name || "").toLowerCase().includes(userSearch.toLowerCase())).map(u => (
+                                <div
+                                  key={u.id}
+                                  className="px-4 py-2 hover:bg-slate-100 cursor-pointer text-sm flex justify-between items-center"
+                                  onClick={() => {
+                                    setSelectedUserId(String(u.id))
+                                    setUserSearch(u.name || u.identifier)
+                                    setUserDropdownOpen(false)
+                                  }}
+                                >
+                                  <span className="font-medium text-slate-800">{u.name || u.identifier}</span>
+                                  <span className="text-xs text-slate-500">{u.role}</span>
+                                </div>
+                              ))
+                            ) : (
+                              <div className="px-4 py-3 text-sm text-slate-500 text-center">Pegawai tidak ditemukan.</div>
+                            )}
+                          </div>
+                        )}
+                      </div>
 
-                    <div className="w-full md:w-32 space-y-1">
-                      <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Tarif (Rp)</label>
-                      <Input 
-                        type="text" 
-                        placeholder="150.000" 
-                        className="bg-white text-right font-medium"
-                        value={appliedTariff} 
-                        onChange={e => {
-                          const num = e.target.value.replace(/\D/g, "")
-                          setAppliedTariff(num.replace(/\B(?=(\d{3})+(?!\d))/g, "."))
-                        }} 
-                      />
+                      <div className="w-full md:w-1/2 space-y-1 relative">
+                        <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Pilih Tindakan</label>
+                        <div className="relative">
+                          <Input
+                            type="text"
+                            placeholder="Cari tindakan..."
+                            className="bg-white pr-8 cursor-pointer"
+                            value={treatmentSearch}
+                            onChange={e => {
+                              setTreatmentSearch(e.target.value)
+                              setSelectedTreatmentId("")
+                              setAppliedTariff("")
+                              if (!treatmentDropdownOpen) setTreatmentDropdownOpen(true)
+                            }}
+                            onFocus={() => setTreatmentDropdownOpen(true)}
+                            onBlur={() => setTimeout(() => setTreatmentDropdownOpen(false), 200)}
+                          />
+                          <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
+                        </div>
+                        {treatmentDropdownOpen && (
+                          <div className="absolute z-10 w-full mt-1 bg-white border border-slate-200 rounded-md shadow-lg max-h-60 overflow-auto bottom-full mb-1">
+                            {treatmentsList.filter(t => (t.name || "").toLowerCase().includes(treatmentSearch.toLowerCase())).length > 0 ? (
+                              treatmentsList.filter(t => (t.name || "").toLowerCase().includes(treatmentSearch.toLowerCase())).map(t => (
+                                <div
+                                  key={t.ID}
+                                  className="px-4 py-2 hover:bg-slate-100 cursor-pointer text-sm flex justify-between items-center"
+                                  onClick={() => {
+                                    setSelectedTreatmentId(String(t.ID))
+                                    setTreatmentSearch(t.name)
+                                    if (t.base_price) {
+                                      const formatted = String(t.base_price).replace(/\D/g, "").replace(/\B(?=(\d{3})+(?!\d))/g, ".")
+                                      setAppliedTariff(formatted)
+                                    }
+                                    setTreatmentDropdownOpen(false)
+                                  }}
+                                >
+                                  <span className="font-medium text-slate-800">{t.name}</span>
+                                </div>
+                              ))
+                            ) : (
+                              <div className="px-4 py-3 text-sm text-slate-500 text-center">Tindakan tidak ditemukan.</div>
+                            )}
+                          </div>
+                        )}
+                      </div>
                     </div>
                     
-                    <Button onClick={handleAssignTreatment} disabled={!selectedTreatmentId || !appliedTariff || isAssigning} className="w-full md:w-auto px-6 shadow-sm">
-                      <PlusCircle className="mr-2 h-4 w-4" /> Tambah
-                    </Button>
+                    <div className="flex flex-col md:flex-row gap-4 items-end">
+                      <div className="w-full md:flex-1 space-y-1">
+                        <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Catatan (Opsional)</label>
+                        <Input 
+                          type="text" 
+                          placeholder="Misal: Gigi 45" 
+                          className="bg-white"
+                          value={treatmentNotes} 
+                          onChange={e => setTreatmentNotes(e.target.value)} 
+                        />
+                      </div>
+
+                      <div className="w-full md:w-48 space-y-1">
+                        <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Tarif (Rp)</label>
+                        <Input 
+                          type="text" 
+                          placeholder="150.000" 
+                          className="bg-white text-right font-medium"
+                          value={appliedTariff} 
+                          onChange={e => {
+                            const num = e.target.value.replace(/\D/g, "")
+                            setAppliedTariff(num.replace(/\B(?=(\d{3})+(?!\d))/g, "."))
+                          }} 
+                        />
+                      </div>
+                      
+                      <Button onClick={handleAssignTreatment} disabled={!selectedTreatmentId || !appliedTariff || !selectedUserId || isAssigning} className="w-full md:w-auto px-6 shadow-sm h-10">
+                        <PlusCircle className="sm:mr-2 h-4 w-4" /> <span className="hidden sm:inline">Tambah</span>
+                      </Button>
+                    </div>
                   </div>
                 </div>
               )}
@@ -302,8 +376,8 @@ export default function RoomPanel() {
                     Belum ada tindakan yang di-assign.
                   </div>
                 ) : (
-                  <div className="border border-slate-200 rounded-xl overflow-hidden bg-white">
-                    <table className="w-full text-sm text-left">
+                  <div className="border border-slate-200 rounded-xl overflow-x-auto bg-white">
+                    <table className="w-full text-sm text-left min-w-[500px]">
                       <thead className="bg-slate-50 border-b border-slate-200 text-slate-500">
                         <tr>
                           <th className="px-4 py-3 font-medium">Tindakan</th>
@@ -357,7 +431,7 @@ export default function RoomPanel() {
         </Button>
         {!isSelesai && (
           <Button onClick={() => setIsFinishDialogOpen(true)} className="bg-green-600 hover:bg-green-700 text-white shadow-md">
-            <CheckCircle className="mr-2 h-4 w-4" /> Tandai Selesai
+            <CheckCircle className="sm:mr-2 h-4 w-4" /> <span className="hidden sm:inline">Tandai Selesai</span>
           </Button>
         )}
       </div>

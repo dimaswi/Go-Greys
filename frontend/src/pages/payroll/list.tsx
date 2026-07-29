@@ -108,13 +108,13 @@ export default function PayrollList() {
     {
       accessorKey: "user.role",
       header: "Role",
-      meta: { className: "w-[150px]" },
+      meta: { className: "hidden sm:table-cell w-[150px]" },
       cell: ({ row }) => row.original.user.role,
     },
     {
       id: "total_tindakan",
       header: () => <div className="text-right">Total Tindakan</div>,
-      meta: { className: "w-[150px] text-right" },
+      meta: { className: "hidden sm:table-cell w-[150px] text-right" },
       cell: ({ row }) => <div className="text-right">{row.original.logs.length}</div>,
     },
     {
@@ -132,33 +132,35 @@ export default function PayrollList() {
   const renderSubComponent = ({ row }: any) => {
     const item = row.original
     return (
-      <div className="py-4 pl-[68px] pr-4 animate-in slide-in-from-top-2 duration-200 bg-slate-50/50">
+      <div className="py-4 pl-4 sm:pl-[68px] pr-4 animate-in slide-in-from-top-2 duration-200 bg-slate-50/50">
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-x-12 gap-y-8">
           {/* List Tindakan */}
           <div>
             <h4 className="text-sm font-semibold mb-3 text-slate-800 border-b pb-2">Rincian Tindakan</h4>
             {item.logs.length > 0 ? (
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="text-left text-slate-500">
-                    <th className="pb-2 font-medium w-[100px]">Tanggal</th>
-                    <th className="pb-2 font-medium">Tindakan</th>
-                    <th className="pb-2 font-medium text-right">Tarif</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100">
-                  {item.logs.map((log: any, idx: number) => (
-                    <tr key={idx}>
-                      <td className="py-2 text-slate-600 align-top">{new Date(log.date).toLocaleDateString('id-ID')}</td>
-                      <td className="py-2 text-slate-800 align-top">
-                        {log.treatment?.name || log.Treatment?.name || '-'}
-                        {log.notes && <span className="text-slate-400 ml-1.5">({log.notes})</span>}
-                      </td>
-                      <td className="py-2 text-right font-medium align-top">{formatCurrency(log.applied_tariff)}</td>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="text-left text-slate-500">
+                      <th className="pb-2 font-medium w-[100px]">Tanggal</th>
+                      <th className="pb-2 font-medium">Tindakan</th>
+                      <th className="pb-2 font-medium text-right">Tarif</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {item.logs.map((log: any, idx: number) => (
+                      <tr key={idx}>
+                        <td className="py-2 text-slate-600 align-top">{new Date(log.date).toLocaleDateString('id-ID')}</td>
+                        <td className="py-2 text-slate-800 align-top whitespace-normal">
+                          {log.treatment?.name || log.Treatment?.name || '-'}
+                          {log.notes && <span className="text-slate-400 ml-1.5 block sm:inline">({log.notes})</span>}
+                        </td>
+                        <td className="py-2 text-right font-medium align-top">{formatCurrency(log.applied_tariff)}</td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             ) : (
               <p className="text-sm text-slate-500 italic">Tidak ada tindakan di periode ini.</p>
             )}
@@ -168,8 +170,8 @@ export default function PayrollList() {
           <div>
             <div className="flex justify-between items-end mb-3 border-b pb-2">
               <h4 className="text-sm font-semibold text-slate-800">Rumus Perhitungan</h4>
-              <Button variant="outline" size="sm" onClick={() => handleDownloadPDF(item.user.id, item.user.name)} className="h-7 text-xs bg-white text-indigo-600 border-indigo-200">
-                <FileText className="w-3 h-3 mr-1.5" /> Download PDF
+              <Button variant="outline" size="sm" onClick={() => handleDownloadPDF(item.user.id, item.user.name)} className="h-7 text-xs bg-white text-indigo-600 border-indigo-200 px-2 sm:px-3">
+                <FileText className="w-3 h-3 sm:mr-1.5" /> <span className="hidden sm:inline">Download PDF</span>
               </Button>
             </div>
             <div className="space-y-2 text-sm">
@@ -227,34 +229,36 @@ export default function PayrollList() {
       title="List Gaji Pegawai"
       description="Lihat rekapitulasi gaji untuk semua tenaga medis dalam periode tertentu."
       actions={
-        <div className="flex flex-col sm:flex-row items-center gap-3">
-          <form onSubmit={handleCalculate} className="flex items-center gap-2 bg-white p-1 rounded-md border shadow-sm">
-            <Input
-              id="start_date"
-              type="date"
-              value={formData.start_date}
-              onChange={e => setFormData({ ...formData, start_date: e.target.value })}
-              required
-              className="w-[130px] h-8 text-xs border-transparent focus-visible:ring-0 shadow-none bg-slate-50"
-            />
-            <span className="text-muted-foreground text-xs font-medium">s/d</span>
-            <Input
-              id="end_date"
-              type="date"
-              value={formData.end_date}
-              onChange={e => setFormData({ ...formData, end_date: e.target.value })}
-              required
-              className="w-[130px] h-8 text-xs border-transparent focus-visible:ring-0 shadow-none bg-slate-50"
-            />
-            <Button type="submit" disabled={loading} size="sm" className="h-8 px-3">
-              {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Calculator className="w-3.5 h-3.5 mr-1" />}
-              {loading ? "" : "Hitung"}
+        <div className="flex flex-wrap items-center justify-end gap-3 w-full sm:w-auto">
+          <form onSubmit={handleCalculate} className="flex items-center gap-2 bg-white p-1 rounded-md border shadow-sm w-auto">
+            <div className="flex items-center gap-2">
+              <Input
+                id="start_date"
+                type="date"
+                value={formData.start_date}
+                onChange={e => setFormData({ ...formData, start_date: e.target.value })}
+                required
+                className="w-[120px] sm:w-[130px] h-8 text-xs border-transparent focus-visible:ring-0 shadow-none bg-slate-50"
+              />
+              <span className="text-muted-foreground text-xs font-medium shrink-0">s/d</span>
+              <Input
+                id="end_date"
+                type="date"
+                value={formData.end_date}
+                onChange={e => setFormData({ ...formData, end_date: e.target.value })}
+                required
+                className="w-[120px] sm:w-[130px] h-8 text-xs border-transparent focus-visible:ring-0 shadow-none bg-slate-50"
+              />
+            </div>
+            <Button type="submit" disabled={loading} size="sm" className="h-8 px-2 sm:px-3 w-auto shrink-0">
+              {loading ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Calculator className="w-3.5 h-3.5 sm:mr-1" />}
+              {!loading && <span className="hidden sm:inline">Hitung</span>}
             </Button>
           </form>
-          <Link to="/payroll">
-            <Button variant="outline" size="sm" className="h-9 bg-white text-slate-700 shadow-sm">
-              <Calculator className="w-4 h-4 mr-2 text-slate-500" />
-              Kalkulator Personal
+          <Link to="/payroll" className="w-auto shrink-0">
+            <Button variant="outline" size="sm" className="h-9 bg-white text-slate-700 shadow-sm w-auto px-2 sm:px-3">
+              <Calculator className="w-4 h-4 sm:mr-2 text-slate-500" />
+              <span className="hidden sm:inline">Kalkulator Personal</span>
             </Button>
           </Link>
         </div>

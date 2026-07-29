@@ -55,7 +55,7 @@ export default function VisitsIndex() {
         canCreate && (
           <Button asChild>
             <Link to="/visits/create">
-              <Plus className="mr-2 h-4 w-4" /> Daftar Kunjungan Baru
+              <Plus className="sm:mr-2 h-4 w-4" /> <span className="hidden sm:inline">Daftar Kunjungan Baru</span>
             </Link>
           </Button>
         )
