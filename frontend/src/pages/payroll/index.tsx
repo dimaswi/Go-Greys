@@ -12,7 +12,7 @@ export default function PayrollIndex() {
   const [loading, setLoading] = useState(false)
   const [users, setUsers] = useState<any[]>([])
 
-  const [userSearch, setUserSearch] = useState("")
+  // const [userSearch, setUserSearch] = useState("")
 
   const [formData, setFormData] = useState({
     user_id: "",
