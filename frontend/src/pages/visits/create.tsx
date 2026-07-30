@@ -4,8 +4,8 @@ import { ArrowLeft, Save, Loader2, PlusCircle } from "lucide-react"
 import { useState, useEffect } from "react"
 import { Link, useNavigate, useSearchParams } from "react-router-dom"
 import axios from "axios"
-import { Input } from "@/components/ui/input"
 import { toast } from "sonner"
+import { SearchableSelect, type Option } from "@/components/ui/searchable-select"
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8080/api"
 
@@ -24,11 +24,6 @@ export default function VisitCreate() {
     notes: ""
   })
 
-  const [patientSearch, setPatientSearch] = useState("")
-  const [patientDropdownOpen, setPatientDropdownOpen] = useState(false)
-  const [doctorSearch, setDoctorSearch] = useState("")
-  const [doctorDropdownOpen, setDoctorDropdownOpen] = useState(false)
-
   useEffect(() => {
     const fetchData = async () => {
       try {
@@ -46,17 +41,12 @@ export default function VisitCreate() {
         const allUsers = doctorsRes.data || []
         setDoctors(allUsers.filter((u: any) => u.is_dokter))
 
-        // If there's an initial patient_id, set the search text
-        if (initialPatientId && patientsRes.data) {
-          const p = patientsRes.data.find((x: any) => String(x.ID) === initialPatientId)
-          if (p) setPatientSearch(`${p.name} - ${p.phone}`)
-        }
       } catch (err) {
         console.error("Failed to fetch dependencies", err)
       }
     }
     fetchData()
-  }, [initialPatientId])
+  }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -64,7 +54,7 @@ export default function VisitCreate() {
     try {
       const token = localStorage.getItem("token")
       if (!formData.patient_id) {
-        toast.error("Silakan pilih pasien terlebih dahulu dari daftar drop-down.")
+        toast.error("Silakan pilih pasien terlebih dahulu dari daftar.")
         setLoading(false)
         return
       }
@@ -91,6 +81,21 @@ export default function VisitCreate() {
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setFormData({ ...formData, [e.target.id]: e.target.value })
   }
+
+  const patientOptions: Option[] = patients.map(p => ({
+    value: String(p.ID),
+    label: p.name,
+    description: p.phone || ""
+  }))
+
+  const doctorOptions: Option[] = [
+    { value: "none", label: "Belum Ditentukan (Assign Nanti)" },
+    ...doctors.map(d => ({
+      value: String(d.id),
+      label: d.name,
+      description: d.role
+    }))
+  ]
 
   return (
     <div className="animate-fade-in flex flex-col flex-1 h-full">
@@ -119,92 +124,26 @@ export default function VisitCreate() {
                   <Link to="/patients/create"><PlusCircle className="h-3 w-3 mr-1" /> Pasien Baru</Link>
                 </Button>
               </div>
-              <div className="relative">
-                <Input
-                  type="text"
-                  placeholder="Cari nama atau no. HP pasien..."
-                  value={patientSearch}
-                  onChange={e => {
-                    setPatientSearch(e.target.value)
-                    setFormData({ ...formData, patient_id: "" }) // reset selection when typing
-                    if (!patientDropdownOpen) setPatientDropdownOpen(true)
-                  }}
-                  onFocus={() => setPatientDropdownOpen(true)}
-                  onBlur={() => setTimeout(() => setPatientDropdownOpen(false), 200)}
-                  required={!formData.patient_id}
-                />
-                {patientDropdownOpen && (
-                  <div className="absolute z-10 w-full mt-1 bg-white border border-slate-200 rounded-md shadow-lg max-h-60 overflow-auto">
-                    {patients.filter(p => (p.name || "").toLowerCase().includes(patientSearch.toLowerCase()) || (p.phone || "").includes(patientSearch)).length > 0 ? (
-                      patients.filter(p => (p.name || "").toLowerCase().includes(patientSearch.toLowerCase()) || (p.phone || "").includes(patientSearch)).map(p => (
-                        <div
-                          key={p.ID}
-                          className="px-4 py-2 hover:bg-slate-100 cursor-pointer text-sm flex justify-between items-center"
-                          onClick={() => {
-                            setFormData({ ...formData, patient_id: String(p.ID) })
-                            setPatientSearch(`${p.name} - ${p.phone}`)
-                            setPatientDropdownOpen(false)
-                          }}
-                        >
-                          <span className="font-medium text-slate-800">{p.name}</span>
-                          <span className="text-slate-500 text-xs">{p.phone}</span>
-                        </div>
-                      ))
-                    ) : (
-                      <div className="px-4 py-3 text-sm text-slate-500 text-center">Pasien tidak ditemukan.</div>
-                    )}
-                  </div>
-                )}
-              </div>
+              <SearchableSelect
+                options={patientOptions}
+                value={formData.patient_id}
+                onValueChange={(val) => setFormData({ ...formData, patient_id: val })}
+                placeholder="Pilih Pasien..."
+                searchPlaceholder="Cari nama atau no. HP..."
+                emptyText="Pasien tidak ditemukan."
+              />
             </div>
 
             <div className="space-y-2">
               <Label htmlFor="doctor_id">Dokter yang Dituju (Opsional)</Label>
-              <div className="relative">
-                <Input
-                  type="text"
-                  placeholder="Cari nama dokter (atau kosongkan)..."
-                  value={doctorSearch}
-                  onChange={e => {
-                    setDoctorSearch(e.target.value)
-                    setFormData({ ...formData, doctor_id: "none" }) // reset selection when typing
-                    if (!doctorDropdownOpen) setDoctorDropdownOpen(true)
-                  }}
-                  onFocus={() => setDoctorDropdownOpen(true)}
-                  onBlur={() => setTimeout(() => setDoctorDropdownOpen(false), 200)}
-                />
-                {doctorDropdownOpen && (
-                  <div className="absolute z-10 w-full mt-1 bg-white border border-slate-200 rounded-md shadow-lg max-h-60 overflow-auto">
-                    <div
-                      className="px-4 py-2 hover:bg-slate-100 cursor-pointer text-sm font-medium text-slate-500"
-                      onClick={() => {
-                        setFormData({ ...formData, doctor_id: "none" })
-                        setDoctorSearch("")
-                        setDoctorDropdownOpen(false)
-                      }}
-                    >
-                      Belum Ditentukan (Assign Nanti)
-                    </div>
-                    {doctors.filter(d => (d.name || "").toLowerCase().includes(doctorSearch.toLowerCase())).map(d => (
-                      <div
-                        key={d.id}
-                        className="px-4 py-2 hover:bg-slate-100 cursor-pointer text-sm flex justify-between items-center"
-                        onClick={() => {
-                          setFormData({ ...formData, doctor_id: String(d.id) })
-                          setDoctorSearch(`${d.name} (${d.role})`)
-                          setDoctorDropdownOpen(false)
-                        }}
-                      >
-                        <span className="font-medium text-slate-800">{d.name}</span>
-                        <span className="text-slate-500 text-xs">{d.role}</span>
-                      </div>
-                    ))}
-                    {doctors.filter(d => (d.name || "").toLowerCase().includes(doctorSearch.toLowerCase())).length === 0 && (
-                      <div className="px-4 py-3 text-sm text-slate-500 text-center">Dokter tidak ditemukan.</div>
-                    )}
-                  </div>
-                )}
-              </div>
+              <SearchableSelect
+                options={doctorOptions}
+                value={formData.doctor_id}
+                onValueChange={(val) => setFormData({ ...formData, doctor_id: val || "none" })}
+                placeholder="Pilih Dokter..."
+                searchPlaceholder="Cari nama dokter..."
+                emptyText="Dokter tidak ditemukan."
+              />
             </div>
 
             <div className="space-y-2">

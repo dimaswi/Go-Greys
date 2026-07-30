@@ -6,13 +6,13 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Calculator, Loader2, Users, ArrowLeft, FileText } from "lucide-react"
+import { SearchableSelect } from "@/components/ui/searchable-select"
 
 export default function PayrollIndex() {
   const [loading, setLoading] = useState(false)
   const [users, setUsers] = useState<any[]>([])
 
   const [userSearch, setUserSearch] = useState("")
-  const [userDropdownOpen, setUserDropdownOpen] = useState(false)
 
   const [formData, setFormData] = useState({
     user_id: "",
@@ -126,41 +126,18 @@ export default function PayrollIndex() {
             <div className="space-y-2">
               <Label htmlFor="user_id">Pilih Pegawai / Tenaga Medis</Label>
               <div className="relative">
-                <Input
-                  type="text"
-                  placeholder="Cari nama atau peran pegawai..."
-                  value={userSearch}
-                  onChange={e => {
-                    setUserSearch(e.target.value)
-                    setFormData({ ...formData, user_id: "" }) // reset selection when typing
-                    if (!userDropdownOpen) setUserDropdownOpen(true)
-                  }}
-                  onFocus={() => setUserDropdownOpen(true)}
-                  onBlur={() => setTimeout(() => setUserDropdownOpen(false), 200)}
-                  required={!formData.user_id}
+                <SearchableSelect
+                  options={users.map(u => ({
+                    value: String(u.id),
+                    label: u.name,
+                    description: u.role
+                  }))}
+                  value={formData.user_id}
+                  onValueChange={(val) => setFormData({ ...formData, user_id: val })}
+                  placeholder="Pilih Pegawai / Tenaga Medis..."
+                  searchPlaceholder="Cari nama atau peran pegawai..."
+                  emptyText="Pegawai tidak ditemukan."
                 />
-                {userDropdownOpen && (
-                  <div className="absolute z-10 w-full mt-1 bg-white border border-slate-200 rounded-md shadow-lg max-h-60 overflow-auto">
-                    {users.filter(u => (u.name || "").toLowerCase().includes(userSearch.toLowerCase()) || (u.role || "").toLowerCase().includes(userSearch.toLowerCase())).length > 0 ? (
-                      users.filter(u => (u.name || "").toLowerCase().includes(userSearch.toLowerCase()) || (u.role || "").toLowerCase().includes(userSearch.toLowerCase())).map(u => (
-                        <div
-                          key={u.id}
-                          className="px-4 py-2 hover:bg-slate-100 cursor-pointer text-sm flex justify-between items-center"
-                          onClick={() => {
-                            setFormData({ ...formData, user_id: String(u.id) })
-                            setUserSearch(`${u.name} (${u.role}) ${u.apply_deductions ? "- (Deductions)" : ""}`)
-                            setUserDropdownOpen(false)
-                          }}
-                        >
-                          <span className="font-medium text-slate-800">{u.name}</span>
-                          <span className="text-slate-500 text-xs">{u.role}</span>
-                        </div>
-                      ))
-                    ) : (
-                      <div className="px-4 py-3 text-sm text-slate-500 text-center">Pegawai tidak ditemukan.</div>
-                    )}
-                  </div>
-                )}
               </div>
             </div>
 

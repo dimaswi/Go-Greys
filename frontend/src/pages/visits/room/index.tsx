@@ -4,10 +4,11 @@ import { useParams, Link, useNavigate } from "react-router-dom"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { ArrowLeft, CheckCircle, PlusCircle, Trash, User, Stethoscope, FileText, ChevronDown } from "lucide-react"
+import { ArrowLeft, CheckCircle, PlusCircle, Trash, User, Stethoscope, FileText } from "lucide-react"
 import { toast } from "sonner"
 import dayjs from "dayjs"
 import { useAuth } from "@/context/AuthContext"
+import { SearchableSelect, type Option } from "@/components/ui/searchable-select"
 
 const API_URL = import.meta.env.VITE_API_URL || "http://localhost:8080/api"
 const formatRupiah = (angka: number) => {
@@ -22,21 +23,16 @@ export default function RoomPanel() {
   const [visit, setVisit] = useState<any>(null)
   const [treatmentsList, setTreatmentsList] = useState<any[]>([])
   const [usersList, setUsersList] = useState<any[]>([])
-  
+
   const [selectedTreatmentId, setSelectedTreatmentId] = useState("")
-  const [treatmentSearch, setTreatmentSearch] = useState("")
-  const [treatmentDropdownOpen, setTreatmentDropdownOpen] = useState(false)
-  
   const [selectedUserId, setSelectedUserId] = useState("")
-  const [userSearch, setUserSearch] = useState("")
-  const [userDropdownOpen, setUserDropdownOpen] = useState(false)
 
   const [appliedTariff, setAppliedTariff] = useState("")
   const [treatmentNotes, setTreatmentNotes] = useState("")
   const [isAssigning, setIsAssigning] = useState(false)
-  
+
   const { user: currentUser } = useAuth()
-  
+
   // Dialog state
   const [isFinishDialogOpen, setIsFinishDialogOpen] = useState(false)
   const [deleteLogId, setDeleteLogId] = useState<number | null>(null)
@@ -49,7 +45,7 @@ export default function RoomPanel() {
       const headers = { Authorization: `Bearer ${token}` }
       const res = await axios.get(`${API_URL}/visits/${id}`, { headers })
       setVisit(res.data)
-      
+
       // If status is menunggu, change to di_ruangan
       if (res.data.status === 'menunggu') {
         await axios.put(`${API_URL}/visits/${id}/status`, { status: 'di_ruangan' }, { headers })
@@ -65,9 +61,9 @@ export default function RoomPanel() {
   useEffect(() => {
     const token = localStorage.getItem("token")
     const headers = { Authorization: `Bearer ${token}` }
-    
+
     fetchVisit()
-    
+
     // Fetch master treatments
     axios.get(`${API_URL}/treatments`, { headers })
       .then(res => setTreatmentsList(res.data || []))
@@ -83,10 +79,8 @@ export default function RoomPanel() {
     if (visit && !selectedUserId && currentUser) {
       if (visit.doctor_id && visit.doctor) {
         setSelectedUserId(String(visit.doctor_id))
-        setUserSearch(visit.doctor.name || "")
       } else if (currentUser?.id) {
         setSelectedUserId(String(currentUser.id))
-        setUserSearch(currentUser.name || currentUser.identifier || "")
       }
     }
   }, [visit, currentUser])
@@ -105,12 +99,12 @@ export default function RoomPanel() {
         applied_tariff: Number(appliedTariff.replace(/\./g, "")),
         notes: treatmentNotes,
         date: new Date().toISOString()
-      }, { headers: { Authorization: `Bearer ${token}` }})
-      
+      }, { headers: { Authorization: `Bearer ${token}` } })
+
       setSelectedTreatmentId("")
       setAppliedTariff("")
       setTreatmentNotes("")
-      
+
       // Refresh visit to show new treatment logs
       await fetchVisit()
     } catch (err) {
@@ -152,6 +146,18 @@ export default function RoomPanel() {
 
   const isSelesai = visit.status === 'selesai'
 
+  const userOptions: Option[] = usersList.map(u => ({
+    value: String(u.id),
+    label: u.name || u.identifier,
+    description: u.role
+  }))
+
+  const treatmentOptions: Option[] = treatmentsList.map(t => ({
+    value: String(t.ID),
+    label: t.name,
+    description: t.base_price ? formatRupiah(t.base_price) : ""
+  }))
+
   return (
     <div className="animate-fade-in flex flex-col flex-1 h-full">
       {/* HEADER */}
@@ -173,10 +179,10 @@ export default function RoomPanel() {
       <div className="flex flex-col gap-4 px-4 md:px-6 lg:px-8 flex-1 mb-8">
         <div className="bg-white rounded-xl border shadow-sm p-6 lg:p-8">
           <div className="grid grid-cols-1 lg:grid-cols-10 gap-8">
-            
+
             {/* Kolom Kiri: 30% */}
             <div className="lg:col-span-3 space-y-8 lg:border-r border-slate-100 lg:pr-8">
-              
+
               {/* Profil Pasien */}
               <div>
                 <h3 className="font-semibold text-slate-700 mb-4 flex items-center gap-2 border-b pb-2">
@@ -228,7 +234,7 @@ export default function RoomPanel() {
 
             {/* Kolom Kanan: 70% */}
             <div className="lg:col-span-7 space-y-8">
-              
+
               {/* Panel Tambah Tindakan */}
               {!isSelesai && (
                 <div>
@@ -236,128 +242,73 @@ export default function RoomPanel() {
                     <Stethoscope className="h-5 w-5 text-blue-500" />
                     Tambah Tindakan Baru
                   </h3>
-                  
-                  <div className="bg-slate-50 rounded-xl p-5 border border-slate-100 flex flex-col gap-4">
-                    <div className="flex flex-col md:flex-row gap-4">
-                      <div className="w-full md:w-1/2 space-y-1 relative">
-                        <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Ditangani Oleh</label>
-                        <div className="relative">
-                          <Input
-                            type="text"
-                            placeholder="Cari dokter atau perawat..."
-                            className="bg-white pr-8 cursor-pointer"
-                            value={userSearch}
-                            onChange={e => {
-                              setUserSearch(e.target.value)
-                              setSelectedUserId("")
-                              if (!userDropdownOpen) setUserDropdownOpen(true)
-                            }}
-                            onFocus={() => setUserDropdownOpen(true)}
-                            onBlur={() => setTimeout(() => setUserDropdownOpen(false), 200)}
-                          />
-                          <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
-                        </div>
-                        {userDropdownOpen && (
-                          <div className="absolute z-10 w-full mt-1 bg-white border border-slate-200 rounded-md shadow-lg max-h-60 overflow-auto bottom-full mb-1">
-                            {usersList.filter(u => (u.name || "").toLowerCase().includes(userSearch.toLowerCase())).length > 0 ? (
-                              usersList.filter(u => (u.name || "").toLowerCase().includes(userSearch.toLowerCase())).map(u => (
-                                <div
-                                  key={u.id}
-                                  className="px-4 py-2 hover:bg-slate-100 cursor-pointer text-sm flex justify-between items-center"
-                                  onClick={() => {
-                                    setSelectedUserId(String(u.id))
-                                    setUserSearch(u.name || u.identifier)
-                                    setUserDropdownOpen(false)
-                                  }}
-                                >
-                                  <span className="font-medium text-slate-800">{u.name || u.identifier}</span>
-                                  <span className="text-xs text-slate-500">{u.role}</span>
-                                </div>
-                              ))
-                            ) : (
-                              <div className="px-4 py-3 text-sm text-slate-500 text-center">Pegawai tidak ditemukan.</div>
-                            )}
-                          </div>
-                        )}
-                      </div>
 
-                      <div className="w-full md:w-1/2 space-y-1 relative">
-                        <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Pilih Tindakan</label>
-                        <div className="relative">
-                          <Input
-                            type="text"
-                            placeholder="Cari tindakan..."
-                            className="bg-white pr-8 cursor-pointer"
-                            value={treatmentSearch}
-                            onChange={e => {
-                              setTreatmentSearch(e.target.value)
-                              setSelectedTreatmentId("")
+                  <div className="bg-slate-50 rounded-xl p-5 border border-slate-100 flex flex-col xl:flex-row gap-4 xl:items-end">
+                    <div className="w-full xl:w-[22%] space-y-1 relative">
+                      <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Ditangani Oleh</label>
+                      <SearchableSelect
+                        options={userOptions}
+                        value={selectedUserId}
+                        onValueChange={setSelectedUserId}
+                        placeholder="Pilih pegawai..."
+                        searchPlaceholder="Cari pegawai..."
+                        emptyText="Pegawai tidak ditemukan."
+                      />
+                    </div>
+
+                    <div className="w-full xl:w-[28%] space-y-1 relative">
+                      <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Pilih Tindakan</label>
+                      <SearchableSelect
+                        options={treatmentOptions}
+                        value={selectedTreatmentId}
+                        onValueChange={(val) => {
+                          setSelectedTreatmentId(val)
+                          if (val) {
+                            const t = treatmentsList.find(x => String(x.ID) === val)
+                            if (t && t.base_price) {
+                              const formatted = String(t.base_price).replace(/\D/g, "").replace(/\B(?=(\d{3})+(?!\d))/g, ".")
+                              setAppliedTariff(formatted)
+                            } else {
                               setAppliedTariff("")
-                              if (!treatmentDropdownOpen) setTreatmentDropdownOpen(true)
-                            }}
-                            onFocus={() => setTreatmentDropdownOpen(true)}
-                            onBlur={() => setTimeout(() => setTreatmentDropdownOpen(false), 200)}
-                          />
-                          <ChevronDown className="absolute right-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 pointer-events-none" />
-                        </div>
-                        {treatmentDropdownOpen && (
-                          <div className="absolute z-10 w-full mt-1 bg-white border border-slate-200 rounded-md shadow-lg max-h-60 overflow-auto bottom-full mb-1">
-                            {treatmentsList.filter(t => (t.name || "").toLowerCase().includes(treatmentSearch.toLowerCase())).length > 0 ? (
-                              treatmentsList.filter(t => (t.name || "").toLowerCase().includes(treatmentSearch.toLowerCase())).map(t => (
-                                <div
-                                  key={t.ID}
-                                  className="px-4 py-2 hover:bg-slate-100 cursor-pointer text-sm flex justify-between items-center"
-                                  onClick={() => {
-                                    setSelectedTreatmentId(String(t.ID))
-                                    setTreatmentSearch(t.name)
-                                    if (t.base_price) {
-                                      const formatted = String(t.base_price).replace(/\D/g, "").replace(/\B(?=(\d{3})+(?!\d))/g, ".")
-                                      setAppliedTariff(formatted)
-                                    }
-                                    setTreatmentDropdownOpen(false)
-                                  }}
-                                >
-                                  <span className="font-medium text-slate-800">{t.name}</span>
-                                </div>
-                              ))
-                            ) : (
-                              <div className="px-4 py-3 text-sm text-slate-500 text-center">Tindakan tidak ditemukan.</div>
-                            )}
-                          </div>
-                        )}
-                      </div>
+                            }
+                          } else {
+                            setAppliedTariff("")
+                          }
+                        }}
+                        placeholder="Pilih tindakan..."
+                        searchPlaceholder="Cari nama tindakan..."
+                        emptyText="Tindakan tidak ditemukan."
+                      />
                     </div>
-                    
-                    <div className="flex flex-col md:flex-row gap-4 items-end">
-                      <div className="w-full md:flex-1 space-y-1">
-                        <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Catatan (Opsional)</label>
-                        <Input 
-                          type="text" 
-                          placeholder="Misal: Gigi 45" 
-                          className="bg-white"
-                          value={treatmentNotes} 
-                          onChange={e => setTreatmentNotes(e.target.value)} 
-                        />
-                      </div>
 
-                      <div className="w-full md:w-48 space-y-1">
-                        <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Tarif (Rp)</label>
-                        <Input 
-                          type="text" 
-                          placeholder="150.000" 
-                          className="bg-white text-right font-medium"
-                          value={appliedTariff} 
-                          onChange={e => {
-                            const num = e.target.value.replace(/\D/g, "")
-                            setAppliedTariff(num.replace(/\B(?=(\d{3})+(?!\d))/g, "."))
-                          }} 
-                        />
-                      </div>
-                      
-                      <Button onClick={handleAssignTreatment} disabled={!selectedTreatmentId || !appliedTariff || !selectedUserId || isAssigning} className="w-full md:w-auto px-6 shadow-sm h-10">
-                        <PlusCircle className="sm:mr-2 h-4 w-4" /> <span className="hidden sm:inline">Tambah</span>
-                      </Button>
+                    <div className="w-full xl:flex-1 space-y-1">
+                      <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Catatan</label>
+                      <Input
+                        type="text"
+                        placeholder="Opsional..."
+                        className="bg-white"
+                        value={treatmentNotes}
+                        onChange={e => setTreatmentNotes(e.target.value)}
+                      />
                     </div>
+
+                    <div className="w-full xl:w-[15%] space-y-1">
+                      <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Tarif (Rp)</label>
+                      <Input
+                        type="text"
+                        placeholder="0"
+                        className="bg-white text-right font-medium px-3"
+                        value={appliedTariff}
+                        onChange={e => {
+                          const num = e.target.value.replace(/\D/g, "")
+                          setAppliedTariff(num.replace(/\B(?=(\d{3})+(?!\d))/g, "."))
+                        }}
+                      />
+                    </div>
+
+                    <Button onClick={handleAssignTreatment} disabled={!selectedTreatmentId || !appliedTariff || !selectedUserId || isAssigning} className="w-full xl:w-auto px-4 shadow-sm h-10 shrink-0">
+                      <PlusCircle className="sm:mr-2 h-4 w-4" /> <span className="hidden sm:inline">Tambah</span>
+                    </Button>
                   </div>
                 </div>
               )}
@@ -370,7 +321,7 @@ export default function RoomPanel() {
                     {visit.treatment_logs?.length || 0} Tindakan
                   </span>
                 </div>
-                
+
                 {!visit.treatment_logs || visit.treatment_logs.length === 0 ? (
                   <div className="border border-dashed border-slate-200 rounded-xl p-10 text-center text-slate-400 text-sm">
                     Belum ada tindakan yang di-assign.
