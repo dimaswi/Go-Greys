@@ -21,7 +21,8 @@ export default function UserCreate() {
     role_id: "",
     fee_percentage: "",
     apply_deductions: false,
-    is_dokter: false
+    is_dokter: false,
+    hide_treatments: false
   })
 
   useEffect(() => {
@@ -135,6 +136,20 @@ export default function UserCreate() {
                 Akun ini adalah seorang Dokter (Bisa dipilih saat pasien mendaftar antrean)
               </Label>
             </div>
+            {formData.is_dokter && (
+              <div className="flex items-center space-x-2 pt-2 p-3 bg-amber-50 rounded-md border border-amber-200">
+                <input 
+                  type="checkbox" 
+                  id="hide_treatments" 
+                  checked={formData.hide_treatments} 
+                  onChange={(e) => setFormData({ ...formData, hide_treatments: e.target.checked })}
+                  className="h-4 w-4 rounded border-gray-300 text-amber-600 focus:ring-amber-600"
+                />
+                <Label htmlFor="hide_treatments" className="font-medium cursor-pointer text-amber-800">
+                  Sembunyikan Rincian Tindakan di Slip Gaji PDF
+                </Label>
+              </div>
+            )}
           </form>
         </div>
       </div>

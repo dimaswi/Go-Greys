@@ -14,4 +14,5 @@ type User struct {
 	FeePercentage   float64 `json:"fee_percentage" gorm:"default:0"`
 	ApplyDeductions bool    `json:"apply_deductions" gorm:"default:false"`
 	IsDokter        bool    `json:"is_dokter" gorm:"default:false"`
+	HideTreatments  bool    `json:"hide_treatments" gorm:"default:false"`
 }

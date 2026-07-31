@@ -11,6 +11,7 @@ export type User = {
   fee_percentage: number
   apply_deductions: boolean
   is_dokter: boolean
+  hide_treatments: boolean
 }
 
 export const columns = (canView: boolean, canEdit: boolean, canDelete: boolean): ColumnDef<User>[] => [

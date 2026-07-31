@@ -199,45 +199,44 @@ func DownloadSlipPDF(c *gin.Context) {
 
 	pdf.Ln(10) // Smaller spacing
 
-	// Section Title
-	pdf.SetFont("Arial", "B", 11)
-	pdf.CellFormat(190, 6, "Rincian Tindakan", "", 1, "L", false, 0, "")
+	if !user.HideTreatments {
+		// Section Title
+		pdf.SetFont("Arial", "B", 11)
+		pdf.CellFormat(190, 6, "Rincian Tindakan", "", 1, "L", false, 0, "")
 
-	// Table Header (Modern, No gray bg, just border bottom)
-	pdf.SetDrawColor(borderColor[0], borderColor[1], borderColor[2])
-	pdf.SetFont("Arial", "B", 9)
-	pdf.CellFormat(30, 6, "TANGGAL", "B", 0, "L", false, 0, "")
-	pdf.CellFormat(80, 6, "NAMA TINDAKAN", "B", 0, "L", false, 0, "")
-	pdf.CellFormat(40, 6, "TARIF", "B", 0, "R", false, 0, "")
-	pdf.CellFormat(40, 6, "POT. BAHAN", "B", 1, "R", false, 0, "")
+		// Table Header (Modern, No gray bg, just border bottom)
+		pdf.SetDrawColor(borderColor[0], borderColor[1], borderColor[2])
+		pdf.SetFont("Arial", "B", 9)
+		pdf.CellFormat(30, 6, "TANGGAL", "B", 0, "L", false, 0, "")
+		pdf.CellFormat(80, 6, "NAMA TINDAKAN", "B", 0, "L", false, 0, "")
+		pdf.CellFormat(40, 6, "TARIF", "B", 0, "R", false, 0, "")
+		pdf.CellFormat(40, 6, "POT. BAHAN", "B", 1, "R", false, 0, "")
 
-	pdf.SetFont("Arial", "", 9)
-	visibleCount := 0
-	for _, log := range logs {
-		if log.Treatment.HideInPDF {
-			continue // Sembunyikan dari tampilan PDF, tetap ikut kalkulasi
+		pdf.SetFont("Arial", "", 9)
+		visibleCount := 0
+		for _, log := range logs {
+			visibleCount++
+			pdf.CellFormat(30, 6, log.Date.Format("02/01/2006"), "B", 0, "L", false, 0, "")
+
+			tindakanName := log.Treatment.Name
+			if log.Notes != "" {
+				tindakanName += " (" + log.Notes + ")"
+			}
+
+			pdf.CellFormat(80, 6, tindakanName, "B", 0, "L", false, 0, "")
+			pdf.CellFormat(40, 6, formatRupiah(log.AppliedTariff), "B", 0, "R", false, 0, "")
+
+			potBahan := 0.0
+			if !log.Treatment.IsFixedFee && user.ApplyDeductions {
+				potBahan = log.Treatment.MaterialDeduction
+			}
+			pdf.CellFormat(40, 6, formatRupiah(potBahan), "B", 1, "R", false, 0, "")
 		}
-		visibleCount++
-		pdf.CellFormat(30, 6, log.Date.Format("02/01/2006"), "B", 0, "L", false, 0, "")
-
-		tindakanName := log.Treatment.Name
-		if log.Notes != "" {
-			tindakanName += " (" + log.Notes + ")"
+		if visibleCount == 0 {
+			pdf.CellFormat(190, 6, "Tidak ada tindakan di periode ini", "B", 1, "C", false, 0, "")
 		}
-
-		pdf.CellFormat(80, 6, tindakanName, "B", 0, "L", false, 0, "")
-		pdf.CellFormat(40, 6, formatRupiah(log.AppliedTariff), "B", 0, "R", false, 0, "")
-
-		potBahan := 0.0
-		if !log.Treatment.IsFixedFee && user.ApplyDeductions {
-			potBahan = log.Treatment.MaterialDeduction
-		}
-		pdf.CellFormat(40, 6, formatRupiah(potBahan), "B", 1, "R", false, 0, "")
+		pdf.Ln(4) // Smaller spacing
 	}
-	if visibleCount == 0 {
-		pdf.CellFormat(190, 6, "Tidak ada tindakan di periode ini", "B", 1, "C", false, 0, "")
-	}
-	pdf.Ln(4) // Smaller spacing
 
 	// Section Title
 	pdf.SetFont("Arial", "B", 11)

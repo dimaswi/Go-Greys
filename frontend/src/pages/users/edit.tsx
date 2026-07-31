@@ -26,7 +26,8 @@ export default function UserEdit() {
     role_id: "",
     fee_percentage: "",
     apply_deductions: false,
-    is_dokter: false
+    is_dokter: false,
+    hide_treatments: false
   })
 
   useEffect(() => {
@@ -52,7 +53,8 @@ export default function UserEdit() {
             role_id: userRole ? userRole.id : "",
             fee_percentage: user.fee_percentage ? String(user.fee_percentage) : "0",
             apply_deductions: !!user.apply_deductions,
-            is_dokter: !!user.is_dokter
+            is_dokter: !!user.is_dokter,
+            hide_treatments: !!user.hide_treatments
           })
         }
       } catch (err) {
@@ -184,6 +186,20 @@ export default function UserEdit() {
                   Akun ini adalah seorang Dokter (Bisa dipilih saat pasien mendaftar antrean)
                 </Label>
               </div>
+              {formData.is_dokter && (
+                <div className="flex items-center space-x-2 pt-2 p-3 bg-amber-50 rounded-md border border-amber-200">
+                  <input 
+                    type="checkbox" 
+                    id="hide_treatments" 
+                    checked={formData.hide_treatments} 
+                    onChange={(e) => setFormData({ ...formData, hide_treatments: e.target.checked })}
+                    className="h-4 w-4 rounded border-gray-300 text-amber-600 focus:ring-amber-600"
+                  />
+                  <Label htmlFor="hide_treatments" className="font-medium cursor-pointer text-amber-800">
+                    Sembunyikan Rincian Tindakan di Slip Gaji PDF
+                  </Label>
+                </div>
+              )}
 
               <div className="pt-4 border-t">
                 <h3 className="text-sm font-medium mb-4">Keamanan</h3>

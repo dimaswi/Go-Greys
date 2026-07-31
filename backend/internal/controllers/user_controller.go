@@ -19,6 +19,7 @@ type UserResponse struct {
 	FeePercentage   float64 `json:"fee_percentage"`
 	ApplyDeductions bool    `json:"apply_deductions"`
 	IsDokter        bool    `json:"is_dokter"`
+	HideTreatments  bool    `json:"hide_treatments"`
 }
 
 func GetUsers(c *gin.Context) {
@@ -41,6 +42,7 @@ func GetUsers(c *gin.Context) {
 			FeePercentage:   user.FeePercentage,
 			ApplyDeductions: user.ApplyDeductions,
 			IsDokter:        user.IsDokter,
+			HideTreatments:  user.HideTreatments,
 		})
 	}
 
@@ -64,6 +66,7 @@ func GetUser(c *gin.Context) {
 		FeePercentage:   user.FeePercentage,
 		ApplyDeductions: user.ApplyDeductions,
 		IsDokter:        user.IsDokter,
+		HideTreatments:  user.HideTreatments,
 	}
 	c.JSON(http.StatusOK, resp)
 }
@@ -115,6 +118,7 @@ func CreateUser(c *gin.Context) {
 		FeePercentage   float64 `json:"fee_percentage"`
 		ApplyDeductions bool    `json:"apply_deductions"`
 		IsDokter        bool    `json:"is_dokter"`
+		HideTreatments  bool    `json:"hide_treatments"`
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -141,6 +145,7 @@ func CreateUser(c *gin.Context) {
 		FeePercentage:   req.FeePercentage,
 		ApplyDeductions: req.ApplyDeductions,
 		IsDokter:        req.IsDokter,
+		HideTreatments:  req.HideTreatments,
 	}
 
 	if err := database.DB.Create(&user).Error; err != nil {
@@ -167,6 +172,7 @@ func UpdateUser(c *gin.Context) {
 		FeePercentage   float64 `json:"fee_percentage"`
 		ApplyDeductions bool    `json:"apply_deductions"`
 		IsDokter        bool    `json:"is_dokter"`
+		HideTreatments  bool    `json:"hide_treatments"`
 	}
 
 	if err := c.ShouldBindJSON(&req); err != nil {
@@ -180,6 +186,7 @@ func UpdateUser(c *gin.Context) {
 	user.FeePercentage = req.FeePercentage
 	user.ApplyDeductions = req.ApplyDeductions
 	user.IsDokter = req.IsDokter
+	user.HideTreatments = req.HideTreatments
 
 	if err := database.DB.Save(&user).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": "Gagal menyimpan user (username mungkin sudah ada)"})

@@ -15,7 +15,6 @@ type TreatmentRequest struct {
 	IsFixedFee        bool    `json:"is_fixed_fee"`
 	MaterialDeduction float64 `json:"material_deduction"`
 	FixedMedicalFee   float64 `json:"fixed_medical_fee"`
-	HideInPDF         bool    `json:"hide_in_pdf"`
 }
 
 func GetTreatments(c *gin.Context) {
@@ -40,7 +39,6 @@ func CreateTreatment(c *gin.Context) {
 		IsFixedFee:        req.IsFixedFee,
 		MaterialDeduction: req.MaterialDeduction,
 		FixedMedicalFee:   req.FixedMedicalFee,
-		HideInPDF:         req.HideInPDF,
 	}
 
 	if err := database.DB.Create(&treatment).Error; err != nil {
@@ -74,7 +72,6 @@ func UpdateTreatment(c *gin.Context) {
 	treatment.IsFixedFee = req.IsFixedFee
 	treatment.MaterialDeduction = req.MaterialDeduction
 	treatment.FixedMedicalFee = req.FixedMedicalFee
-	treatment.HideInPDF = req.HideInPDF
 
 	if err := database.DB.Save(&treatment).Error; err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"message": "Gagal menyimpan tindakan"})
