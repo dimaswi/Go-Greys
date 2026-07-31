@@ -4,7 +4,7 @@ import { useParams, Link, useNavigate } from "react-router-dom"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog"
-import { ArrowLeft, CheckCircle, PlusCircle, Trash, User, Stethoscope, FileText } from "lucide-react"
+import { ArrowLeft, CheckCircle, PlusCircle, Trash, User, Stethoscope, FileText, RotateCcw } from "lucide-react"
 import { toast } from "sonner"
 import dayjs from "dayjs"
 import { useAuth } from "@/context/AuthContext"
@@ -35,6 +35,7 @@ export default function RoomPanel() {
 
   // Dialog state
   const [isFinishDialogOpen, setIsFinishDialogOpen] = useState(false)
+  const [isUndoDialogOpen, setIsUndoDialogOpen] = useState(false)
   const [deleteLogId, setDeleteLogId] = useState<number | null>(null)
 
   const [loading, setLoading] = useState(true)
@@ -138,6 +139,21 @@ export default function RoomPanel() {
       navigate("/visits")
     } catch (err) {
       console.error(err)
+    }
+  }
+
+  const handleUndoFinish = async () => {
+    try {
+      const token = localStorage.getItem("token")
+      await axios.put(`${API_URL}/visits/${id}/status`, { status: 'di_ruangan' }, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+      setIsUndoDialogOpen(false)
+      await fetchVisit()
+      toast.success("Status kunjungan dikembalikan ke Sedang Diperiksa")
+    } catch (err) {
+      console.error(err)
+      toast.error("Gagal membatalkan status selesai")
     }
   }
 
@@ -380,7 +396,16 @@ export default function RoomPanel() {
         <Button variant="outline" asChild>
           <Link to="/visits">Kembali ke Antrean</Link>
         </Button>
-        {!isSelesai && (
+        {isSelesai ? (
+          <Button
+            variant="outline"
+            onClick={() => setIsUndoDialogOpen(true)}
+            className="border-orange-300 text-orange-600 hover:bg-orange-50 hover:text-orange-700"
+          >
+            <RotateCcw className="sm:mr-2 h-4 w-4" />
+            <span className="hidden sm:inline">Batalkan Selesai</span>
+          </Button>
+        ) : (
           <Button onClick={() => setIsFinishDialogOpen(true)} className="bg-green-600 hover:bg-green-700 text-white shadow-md">
             <CheckCircle className="sm:mr-2 h-4 w-4" /> <span className="hidden sm:inline">Tandai Selesai</span>
           </Button>
@@ -414,6 +439,23 @@ export default function RoomPanel() {
           <DialogFooter className="mt-4">
             <Button variant="outline" onClick={() => setDeleteLogId(null)}>Batal</Button>
             <Button onClick={() => deleteLogId && handleDeleteLog(deleteLogId)} variant="destructive">Hapus</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={isUndoDialogOpen} onOpenChange={setIsUndoDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Batalkan Status Selesai?</DialogTitle>
+            <DialogDescription>
+              Kunjungan ini akan dikembalikan ke status <strong>Sedang Diperiksa</strong>. Anda dapat menambah atau mengubah tindakan kembali.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="mt-4">
+            <Button variant="outline" onClick={() => setIsUndoDialogOpen(false)}>Batal</Button>
+            <Button onClick={handleUndoFinish} className="bg-orange-500 hover:bg-orange-600 text-white">
+              <RotateCcw className="mr-2 h-4 w-4" /> Ya, Batalkan Selesai
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

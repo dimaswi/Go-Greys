@@ -45,18 +45,27 @@ func GetVisits(c *gin.Context) {
 	}
 
 	// Filter by Date (default today)
+	// Visit yang masih aktif (menunggu / di_ruangan) SELALU ditampilkan,
+	// tidak peduli tanggalnya — supaya tidak hilang saat filter tanggal diganti.
 	dateFilter := c.Query("date")
 	if dateFilter != "" {
 		parsedDate, err := time.Parse("2006-01-02", dateFilter)
 		if err == nil {
 			nextDay := parsedDate.Add(24 * time.Hour)
-			query = query.Where("date >= ? AND date < ?", parsedDate, nextDay)
+			// Tampilkan: visit pada tanggal yang dipilih ATAU visit yang masih aktif (belum selesai/batal)
+			query = query.Where(
+				"(date >= ? AND date < ?) OR status IN ('menunggu', 'di_ruangan')",
+				parsedDate, nextDay,
+			)
 		}
 	} else {
-		// Default to today
+		// Default today — tetap sertakan visit aktif dari hari lain
 		today := time.Now().Truncate(24 * time.Hour)
 		nextDay := today.Add(24 * time.Hour)
-		query = query.Where("date >= ? AND date < ?", today, nextDay)
+		query = query.Where(
+			"(date >= ? AND date < ?) OR status IN ('menunggu', 'di_ruangan')",
+			today, nextDay,
+		)
 	}
 
 	if err := query.Order("created_at asc").Find(&visits).Error; err != nil {

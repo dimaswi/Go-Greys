@@ -20,7 +20,8 @@ export default function TreatmentEdit() {
     base_price: "",
     is_fixed_fee: false,
     material_deduction: "",
-    fixed_medical_fee: ""
+    fixed_medical_fee: "",
+    hide_in_pdf: false
   })
 
   useEffect(() => {
@@ -42,7 +43,8 @@ export default function TreatmentEdit() {
             base_price: formatCurrency(treatment.base_price),
             is_fixed_fee: !!treatment.is_fixed_fee,
             material_deduction: formatCurrency(treatment.material_deduction),
-            fixed_medical_fee: formatCurrency(treatment.fixed_medical_fee)
+            fixed_medical_fee: formatCurrency(treatment.fixed_medical_fee),
+            hide_in_pdf: !!treatment.hide_in_pdf
           })
         }
       } catch (err) {
@@ -141,6 +143,24 @@ export default function TreatmentEdit() {
                 <Label htmlFor="fixed_medical_fee">Fee Dokter Khusus Behel (Rp)</Label>
                 <Input id="fixed_medical_fee" type="text" disabled={!formData.is_fixed_fee} required value={formData.fixed_medical_fee} onChange={handleChange} />
                 <p className="text-xs text-blue-600 font-medium">Fee ini akan ditambahkan LANGSUNG di akhir perhitungan gaji dokter (di luar persentase bagi hasil).</p>
+              </div>
+
+              <div className="flex items-start space-x-3 p-4 bg-amber-50 border border-amber-200 rounded-lg">
+                <input
+                  type="checkbox"
+                  id="hide_in_pdf"
+                  checked={formData.hide_in_pdf}
+                  onChange={(e) => setFormData({ ...formData, hide_in_pdf: e.target.checked })}
+                  className="mt-0.5 h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                />
+                <div>
+                  <Label htmlFor="hide_in_pdf" className="font-medium cursor-pointer text-amber-800">
+                    Sembunyikan dari Slip Gaji PDF
+                  </Label>
+                  <p className="text-xs text-amber-700 mt-0.5">
+                    Tindakan ini tetap dihitung dalam total gaji, namun tidak akan muncul di tabel rincian pada PDF dokter.
+                  </p>
+                </div>
               </div>
             </form>
           )}

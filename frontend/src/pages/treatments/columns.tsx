@@ -12,6 +12,7 @@ export type Treatment = {
   is_fixed_fee: boolean
   material_deduction: number
   fixed_medical_fee: number
+  hide_in_pdf: boolean
 }
 
 const formatRupiah = (angka: number) => {
@@ -48,6 +49,15 @@ export const columns = (canEdit: boolean, canDelete: boolean): ColumnDef<Treatme
     header: "Potongan Bahan",
     cell: ({ row }) => (
       <span>{formatRupiah(row.original.material_deduction)}</span>
+    )
+  },
+  {
+    accessorKey: "hide_in_pdf",
+    header: "Di PDF",
+    cell: ({ row }) => (
+      row.original.hide_in_pdf
+        ? <span className="inline-flex items-center gap-1 bg-red-50 text-red-600 border border-red-200 text-xs font-medium px-2 py-0.5 rounded-full">Disembunyikan</span>
+        : <span className="inline-flex items-center gap-1 bg-green-50 text-green-700 border border-green-200 text-xs font-medium px-2 py-0.5 rounded-full">Tampil</span>
     )
   },
   {

@@ -197,7 +197,12 @@ func DownloadSlipPDF(c *gin.Context) {
 	pdf.CellFormat(40, 6, "POT. BAHAN", "B", 1, "R", false, 0, "")
 
 	pdf.SetFont("Arial", "", 9)
+	visibleCount := 0
 	for _, log := range logs {
+		if log.Treatment.HideInPDF {
+			continue // Sembunyikan dari tampilan PDF, tetap ikut kalkulasi
+		}
+		visibleCount++
 		pdf.CellFormat(30, 6, log.Date.Format("02/01/2006"), "B", 0, "L", false, 0, "")
 
 		tindakanName := log.Treatment.Name
@@ -214,7 +219,7 @@ func DownloadSlipPDF(c *gin.Context) {
 		}
 		pdf.CellFormat(40, 6, formatRupiah(potBahan), "B", 1, "R", false, 0, "")
 	}
-	if len(logs) == 0 {
+	if visibleCount == 0 {
 		pdf.CellFormat(190, 6, "Tidak ada tindakan di periode ini", "B", 1, "C", false, 0, "")
 	}
 	pdf.Ln(4) // Smaller spacing
