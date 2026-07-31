@@ -4,10 +4,10 @@ import (
 	"bytes"
 	"fmt"
 	"image"
+	_ "image/jpeg"
 	_ "image/png"
 	"io"
 	"net/http"
-	"os"
 	"strings"
 	"time"
 
@@ -114,54 +114,73 @@ func DownloadSlipPDF(c *gin.Context) {
 	primaryColor := []int{30, 64, 175}  // Blue 800
 	borderColor := []int{226, 232, 240} // Slate 200
 
-	// Header Rectangle
-	// Green background
+	// Header Rectangle (taller to accommodate logo + subtitle)
 	pdf.SetFillColor(22, 163, 74) // Green 600
-	pdf.Rect(0, 0, 210, 35, "F")
+	pdf.Rect(0, 0, 210, 40, "F")
 
-	// Render Logo from logo.PNG
-	logoPaths := []string{"../../logo.PNG", "logo.PNG", "../../../logo.PNG", `c:\Users\User\Documents\Freelance\Go-Greys\logo.PNG`}
-	var file *os.File
-	for _, p := range logoPaths {
-		file, err = os.Open(p)
-		if err == nil {
-			break
+	// Render Logo from siteConfig.LogoURL
+	logoRendered := false
+	if siteConfig.LogoURL != "" {
+		resp, httpErr := http.Get(siteConfig.LogoURL)
+		if httpErr == nil {
+			defer resp.Body.Close()
+			fileBytes, readErr := io.ReadAll(resp.Body)
+			if readErr == nil {
+				// Detect image type
+				imgType := "PNG"
+				contentType := resp.Header.Get("Content-Type")
+				if strings.Contains(contentType, "jpeg") || strings.Contains(contentType, "jpg") {
+					imgType = "JPG"
+				} else if strings.Contains(contentType, "gif") {
+					imgType = "GIF"
+				} else if strings.HasSuffix(strings.ToLower(siteConfig.LogoURL), ".jpg") || strings.HasSuffix(strings.ToLower(siteConfig.LogoURL), ".jpeg") {
+					imgType = "JPG"
+				}
+
+				imgConfig, _, decodeErr := image.DecodeConfig(bytes.NewReader(fileBytes))
+				if decodeErr == nil && imgConfig.Width > 0 {
+					imgPath := "logo_header"
+					pdf.RegisterImageOptionsReader(imgPath, gofpdf.ImageOptions{ImageType: imgType}, bytes.NewReader(fileBytes))
+
+					// Logo di atas, subtitle di bawah → logo tinggi 22mm, mulai Y=3
+					h := 22.0
+					w := h * float64(imgConfig.Width) / float64(imgConfig.Height)
+					if w > 100 {
+						w = 100
+						h = w * float64(imgConfig.Height) / float64(imgConfig.Width)
+					}
+					x := (210.0 - w) / 2.0
+					y := (40.0-h)/2.0 - 3.0 // sedikit ke atas buat ruang subtitle
+
+					pdf.ImageOptions(imgPath, x, y, w, h, false, gofpdf.ImageOptions{ImageType: imgType}, 0, "")
+
+					// Subtitle di bawah logo
+					pdf.SetTextColor(255, 255, 255)
+					pdf.SetFont("Arial", "", 10)
+					pdf.SetXY(10, y+h+1)
+					pdf.CellFormat(190, 6, "SLIP GAJI PEGAWAI", "", 1, "C", false, 0, "")
+
+					logoRendered = true
+				}
+			}
 		}
 	}
 
-	if file != nil {
-		fileBytes, err := io.ReadAll(file)
-		file.Close()
-		if err == nil {
-			imgConfig, _, err := image.DecodeConfig(bytes.NewReader(fileBytes))
-			if err == nil {
-				imgPath := "logo_header"
-				pdf.RegisterImageOptionsReader(imgPath, gofpdf.ImageOptions{ImageType: "PNG"}, bytes.NewReader(fileBytes))
-				
-				// Calculate width for centering
-				h := 25.0
-				w := h * float64(imgConfig.Width) / float64(imgConfig.Height)
-				x := (210.0 - w) / 2.0
-				y := (35.0 - h) / 2.0
-				
-				pdf.ImageOptions(imgPath, x, y, w, h, false, gofpdf.ImageOptions{ImageType: "PNG"}, 0, "")
-			}
-		}
-	} else {
+	if !logoRendered {
 		// Fallback text if logo fails to load
 		pdf.SetTextColor(255, 255, 255)
 		pdf.SetFont("Arial", "B", 24)
-		pdf.SetXY(10, 10)
+		pdf.SetXY(10, 8)
 		pdf.CellFormat(190, 10, appName, "", 1, "C", false, 0, "")
 		pdf.SetFont("Arial", "", 12)
 		pdf.CellFormat(190, 8, "SLIP GAJI PEGAWAI", "", 1, "C", false, 0, "")
 	}
 
 	pdf.SetTextColor(0, 0, 0)
-	pdf.SetY(40) // Move up slightly
+	pdf.SetY(45) // after taller header
 
 	// Identity Box (No Background, just text)
-	pdf.SetXY(10, 40)
+	pdf.SetXY(10, 45)
 	pdf.SetFont("Arial", "B", 10)
 	pdf.CellFormat(25, 5, "Nama", "", 0, "L", false, 0, "")
 	pdf.SetFont("Arial", "", 10)
