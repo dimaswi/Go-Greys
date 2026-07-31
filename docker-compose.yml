@@ -33,6 +33,7 @@ services:
       - db
     volumes:
       - backend_uploads:/app/uploads
+      - ./logo.PNG:/app/logo.PNG
     restart: always
 
   frontend:
