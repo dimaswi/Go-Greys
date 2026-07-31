@@ -138,7 +138,7 @@ func DownloadSlipPDF(c *gin.Context) {
 			if err == nil && imgConfig.Width > 0 {
 				imgPath := "logo_header"
 				pdf.RegisterImageOptionsReader(imgPath, gofpdf.ImageOptions{ImageType: "PNG"}, bytes.NewReader(fileBytes))
-				
+
 				// Logo di atas, subtitle di bawah → logo tinggi 22mm, mulai Y=3
 				h := 22.0
 				w := h * float64(imgConfig.Width) / float64(imgConfig.Height)
@@ -148,20 +148,19 @@ func DownloadSlipPDF(c *gin.Context) {
 				}
 				x := (210.0 - w) / 2.0
 				y := (40.0-h)/2.0 - 3.0 // sedikit ke atas buat ruang subtitle
-				
+
 				pdf.ImageOptions(imgPath, x, y, w, h, false, gofpdf.ImageOptions{ImageType: "PNG"}, 0, "")
 
 				// Subtitle di bawah logo
 				pdf.SetTextColor(255, 255, 255)
 				pdf.SetFont("Arial", "", 10)
 				pdf.SetXY(10, y+h+1)
-				pdf.CellFormat(190, 6, "SLIP GAJI PEGAWAI", "", 1, "C", false, 0, "")
 
 				logoRendered = true
 			}
 		}
-	} 
-	
+	}
+
 	if !logoRendered {
 		// Fallback text if logo fails to load
 		pdf.SetTextColor(255, 255, 255)
@@ -169,7 +168,6 @@ func DownloadSlipPDF(c *gin.Context) {
 		pdf.SetXY(10, 8)
 		pdf.CellFormat(190, 10, appName, "", 1, "C", false, 0, "")
 		pdf.SetFont("Arial", "", 12)
-		pdf.CellFormat(190, 8, "SLIP GAJI PEGAWAI", "", 1, "C", false, 0, "")
 	}
 
 	pdf.SetTextColor(0, 0, 0)
